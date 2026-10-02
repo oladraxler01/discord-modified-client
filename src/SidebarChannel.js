@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import "./SidebarChannel.css";
 
-const SidebarChannel = ({ id, channelName }) => {
+const SidebarChannel = ({ id, channelName, onNavigate }) => {
   const copyRoomLink = async () => {
     const roomLink = `${window.location.origin}/chat/${encodeURIComponent(id)}`;
 
@@ -19,6 +19,7 @@ const SidebarChannel = ({ id, channelName }) => {
       <Link
         className="sidebarChannel__link"
         to={`/chat/${encodeURIComponent(id)}`}
+        onClick={onNavigate}
       >
         <h4>
           <span className="sidebarChannel__hash">#</span>

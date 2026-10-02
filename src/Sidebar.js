@@ -21,7 +21,7 @@ const pusher = new Pusher("e97d599fd9d4473f90d2", {
   cluster: "us2",
 });
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen = false, onNavigate }) => {
   const user = useSelector(selectUser);
   const userId = user?.uid;
   const [channels, setChannels] = useState([]);
@@ -144,7 +144,10 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="sidebar">
+    <div
+      id="app-sidebar"
+      className={`sidebar ${isOpen ? "sidebar--open" : ""}`}
+    >
       <div className="sidebar__top">
         <h3>Clever Programmer</h3>
         <ExpandMoreIcon />
@@ -161,7 +164,12 @@ const Sidebar = () => {
         <div className="sidebar__channelsList">
           {/* FIXED: Mapped to match your backend's { id, name } structure */}
           {channels?.map(({ id, name }) => (
-            <SidebarChannel key={id} id={id} channelName={name} />
+            <SidebarChannel
+              key={id}
+              id={id}
+              channelName={name}
+              onNavigate={onNavigate}
+            />
           ))}
         </div>
 

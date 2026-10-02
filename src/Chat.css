@@ -1,20 +1,14 @@
 .chat {
+  box-sizing: border-box;
   position: relative;
   display: flex;
   flex-direction: column;
-  flex: 0.75;
-  background-color: #363a3f;
-  height: 100vh;
-}
-
-.chat {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
   background-color: #363a3f;
-  height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
 .chat__input {
@@ -333,18 +327,75 @@
 
 @media (max-width: 768px) {
   .chat {
-    height: auto;
-    min-height: 60vh;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
   .chat__input {
-    margin: 12px;
-    padding: 12px;
+    box-sizing: border-box;
+    margin: 8px;
+    padding: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
   }
 
   .chat__form {
     width: 100%;
-    flex-wrap: wrap;
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .chat__input > form > input {
+    padding: 10px 6px;
+    font-size: 16px;
+  }
+
+  .chat__recordingPanel,
+  .chat__voiceReady {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .chat__waveform {
+    min-width: 72px;
+    flex: 1;
+  }
+
+  .chat__inputIcon {
+    margin-left: auto;
+  }
+
+  .chat__sendButton {
+    padding: 10px 12px;
+  }
+
+  .chat__picker {
+    right: 8px;
+    bottom: 84px;
+    width: min(360px, calc(100vw - 16px));
+  }
+
+  .chat__messages {
+    overflow-x: hidden;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 380px) {
+  .chat__sendButton span {
+    display: none;
+  }
+
+  .chat__recordingLabel,
+  .chat__voiceReady {
+    font-size: 10px;
+  }
+
+  .chat__waveform {
+    min-width: 48px;
   }
 
   .chat__sendButton,
