@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./Sidebar.css";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import AddIcon from "@material-ui/icons/Add";
@@ -22,40 +22,46 @@ const pusher = new Pusher("e97d599fd9d4473f90d2", {
 
 const Sidebar = () => {
   const user = useSelector(selectUser);
+  const userId = user?.uid;
   const [channels, setChannels] = useState([]);
   const [groups, setGroups] = useState([]);
 
-  const getChannels = () => {
+  const getChannels = useCallback(() => {
     axios
       .get("/get/channelList")
       .then((res) => {
         setChannels(res.data);
       })
       .catch((err) => console.log(err));
-  };
+  }, []);
 
-  const getGroups = () => {
-    if (!user?.uid) {
+  const getGroups = useCallback(() => {
+    if (!userId) {
       setGroups([]);
       return;
     }
 
     axios
-      .get(`/groups?uid=${user.uid}`)
+      .get(`/groups?uid=${userId}`)
       .then((res) => setGroups(res.data))
       .catch((err) => console.log(err));
-  };
+  }, [userId]);
 
-  // FIXED: Proper syntax for useEffect
   useEffect(() => {
     getChannels();
     getGroups();
 
     const channel = pusher.subscribe("my-channel");
-    channel.bind("my-event", function (data) {
+    const handleChannelUpdate = () => {
       getChannels();
-    });
-  }, [user?.uid]);
+    };
+    channel.bind("my-event", handleChannelUpdate);
+
+    return () => {
+      channel.unbind("my-event", handleChannelUpdate);
+      pusher.unsubscribe("my-channel");
+    };
+  }, [getChannels, getGroups]);
 
   // FIXED: Now sends data to your Node/Mongo backend instead of Firebase
   const handleAddChannel = (e) => {
