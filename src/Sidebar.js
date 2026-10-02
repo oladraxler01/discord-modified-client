@@ -15,6 +15,7 @@ import { selectUser } from "./features/userSlice";
 import { auth } from "./firebase"; // Removed 'db' since we use Mongo now
 import axios from "./axios";
 import Pusher from "pusher-js";
+import getResponseArray from "./utils/responseArrays";
 
 const pusher = new Pusher("e97d599fd9d4473f90d2", {
   cluster: "us2",
@@ -30,7 +31,7 @@ const Sidebar = () => {
     axios
       .get("/get/channelList")
       .then((res) => {
-        setChannels(res.data);
+        setChannels(getResponseArray(res.data, "channels"));
       })
       .catch((err) => console.log(err));
   }, []);
@@ -43,7 +44,7 @@ const Sidebar = () => {
 
     axios
       .get(`/groups?uid=${userId}`)
-      .then((res) => setGroups(res.data))
+      .then((res) => setGroups(getResponseArray(res.data, "groups")))
       .catch((err) => console.log(err));
   }, [userId]);
 
@@ -159,7 +160,7 @@ const Sidebar = () => {
         </div>
         <div className="sidebar__channelsList">
           {/* FIXED: Mapped to match your backend's { id, name } structure */}
-          {channels.map(({ id, name }) => (
+          {channels?.map(({ id, name }) => (
             <SidebarChannel key={id} id={id} channelName={name} />
           ))}
         </div>
@@ -177,7 +178,7 @@ const Sidebar = () => {
             </div>
           </div>
 
-          {groups.map((group) => (
+          {groups?.map((group) => (
             <div
               className="sidebar__groupItem"
               key={group._id || group.inviteCode}

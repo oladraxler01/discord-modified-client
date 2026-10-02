@@ -20,6 +20,7 @@ import {
 import axios from "./axios"; // We import axios instead of firebase
 import { useParams } from "react-router-dom";
 import usePusherRoom from "./hooks/usePusherRoom";
+import getResponseArray from "./utils/responseArrays";
 
 const popularGifs = [
   {
@@ -151,7 +152,8 @@ const Chat = () => {
       .then((response) => {
         if (!isCurrentRoom) return;
 
-        const room = response.data.find((item) => item.id === roomId);
+        const rooms = getResponseArray(response.data, "channels");
+        const room = rooms.find((item) => item.id === roomId);
         if (room) {
           dispatch(
             setChannelInfo({ channelId: roomId, channelName: room.name }),
@@ -174,7 +176,8 @@ const Chat = () => {
     axios
       .get(`/get/conversation?id=${activeChannelId}`)
       .then((response) => {
-        setMessages(response.data[0]?.conversation || []);
+        const conversations = getResponseArray(response.data, "conversations");
+        setMessages(getResponseArray(conversations[0]?.conversation));
       })
       .catch((error) => console.error("Could not load chat messages:", error));
   }, [activeChannelId]);
@@ -291,7 +294,7 @@ const Chat = () => {
       <ChatHeader channelName={channelName} />
 
       <div className="chat__messages">
-        {messages.map((message, index) => (
+        {messages?.map((message, index) => (
           <Message
             key={index}
             message={message.message}
@@ -309,7 +312,7 @@ const Chat = () => {
             <span className="chat__recordingDot" />
             <span className="chat__recordingLabel">Recording</span>
             <div className="chat__waveform" aria-hidden="true">
-              {audioLevels.map((level, index) => (
+              {audioLevels?.map((level, index) => (
                 <span
                   key={`level-${index}`}
                   className="chat__waveformBar"
@@ -421,7 +424,7 @@ const Chat = () => {
               .filter((gif) =>
                 gif.label.toLowerCase().includes(gifSearch.toLowerCase()),
               )
-              .map((gif) => (
+              ?.map((gif) => (
                 <button
                   className="chat__gifCard"
                   key={gif.label}
