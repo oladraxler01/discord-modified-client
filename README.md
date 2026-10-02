@@ -1,5 +1,11 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), using the [Redux](https://redux.js.org/) and [Redux Toolkit](https://redux-toolkit.js.org/) template.
 
+## API and chat invite links
+
+The frontend uses `https://discord-modified-api.onrender.com` as its default API. To override it locally, copy `.env.example` to `.env.local`, set `REACT_APP_API_URL` to your backend URL, and restart the React dev server.
+
+Each text channel has a **Copy link** action in the sidebar. Invite URLs use `/chat/:roomId`; opening one selects that room and subscribes to its `chat-<roomId>` Pusher channel. When deploying the frontend as a static site, configure the host to rewrite unknown paths such as `/chat/*` to `index.html` so direct invite links load the React app.
+
 ## Available Scripts
 
 In the project directory, you can run:

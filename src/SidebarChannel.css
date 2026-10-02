@@ -1,18 +1,50 @@
-.sidebarChannel:hover>h4 {
-    color: white;
-    background-color: #40464b;
+.sidebarChannel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.sidebarChannel>h4 {
-    display: flex;
-    padding-left: 15px;
-    align-items: center;
-    background-color: #2f3135;
-    color: gray;
-    cursor: pointer;
+.sidebarChannel__link {
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
 }
 
-.sidebarChannel__hash{
-    font-size: 30px;
-    padding: 8px;
+.sidebarChannel:hover h4 {
+  color: white;
+  background-color: #40464b;
+}
+
+.sidebarChannel__link h4 {
+  display: flex;
+  padding-left: 15px;
+  align-items: center;
+  background-color: #2f3135;
+  color: gray;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebarChannel__hash {
+  font-size: 30px;
+  padding: 8px;
+}
+
+.sidebarChannel__copy {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #b9bbbe;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.sidebarChannel__copy:hover {
+  background: #40464b;
+  color: #fff;
 }
