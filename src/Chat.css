@@ -6,7 +6,7 @@
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  background-color: #363a3f;
+  background: rgba(10, 11, 19, 0.16);
   height: 100%;
   overflow: hidden;
 }
@@ -20,7 +20,11 @@
   border-radius: 5px;
   margin: 20px;
   border-top: 1px solid gray;
-  background-color: #474b53;
+  background: rgba(8, 9, 17, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
   gap: 12px;
   flex-wrap: wrap;
 }
@@ -130,7 +134,7 @@
 }
 
 .chat__voiceButton {
-  background: #5865f2;
+  background: linear-gradient(135deg, #8b7cf6, #5865f2);
   color: white;
   min-width: 42px;
   min-height: 42px;
@@ -142,7 +146,7 @@
 }
 
 .chat__sendButton {
-  background: #43b581;
+  background: linear-gradient(135deg, #55d6a2, #2da879);
   color: white;
   min-height: 42px;
 }
@@ -188,7 +192,7 @@
 .chat__pickerButton:hover,
 .chat__pickerButton.is-active {
   color: #fff;
-  background: #5865f2;
+  background: rgba(255, 255, 255, 0.09);
   transform: translateY(-1px);
 }
 
@@ -205,8 +209,10 @@
   overflow: hidden;
   border: 1px solid #202225;
   border-radius: 12px;
-  background: #2f3136;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  background: rgba(16, 15, 25, 0.82);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(28px) saturate(145%);
+  -webkit-backdrop-filter: blur(28px) saturate(145%);
 }
 
 .chat__emojiPicker {
@@ -214,10 +220,10 @@
 }
 
 .chat__emojiPicker .EmojiPickerReact {
-  --epr-bg-color: #2f3136;
-  --epr-category-label-bg-color: #2f3136;
+  --epr-bg-color: rgba(16, 15, 25, 0.94);
+  --epr-category-label-bg-color: rgba(16, 15, 25, 0.94);
   --epr-text-color: #f2f3f5;
-  --epr-search-input-bg-color: #202225;
+  --epr-search-input-bg-color: rgba(255, 255, 255, 0.08);
   --epr-search-input-text-color: #f2f3f5;
   --epr-hover-bg-color: #40444b;
   --epr-focus-bg-color: #40444b;
@@ -267,7 +273,7 @@
   border: 0;
   border-radius: 7px;
   outline: 0;
-  background: #202225;
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
 
@@ -286,7 +292,7 @@
   overflow: hidden;
   border: 0;
   border-radius: 8px;
-  background: #202225;
+  background: rgba(8, 9, 17, 0.5);
   cursor: pointer;
 }
 

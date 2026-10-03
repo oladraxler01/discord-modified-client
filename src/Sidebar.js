@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Link, useHistory } from "react-router-dom";
 import "./Sidebar.css";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import AddIcon from "@material-ui/icons/Add";
@@ -22,10 +23,12 @@ const pusher = new Pusher("e97d599fd9d4473f90d2", {
 });
 
 const Sidebar = ({ isOpen = false, onNavigate }) => {
+  const history = useHistory();
   const user = useSelector(selectUser);
   const userId = user?.uid;
   const [channels, setChannels] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [directMessages, setDirectMessages] = useState([]);
 
   const getChannels = useCallback(() => {
     axios
@@ -48,9 +51,27 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
       .catch((err) => console.log(err));
   }, [userId]);
 
+  const getDirectMessages = useCallback(() => {
+    if (!userId) {
+      setDirectMessages([]);
+      return;
+    }
+
+    axios
+      .get("/dm")
+      .then((response) => {
+        setDirectMessages(getResponseArray(response.data, "directMessages"));
+      })
+      .catch((error) => {
+        console.error("Could not load direct messages:", error);
+        setDirectMessages([]);
+      });
+  }, [userId]);
+
   useEffect(() => {
     getChannels();
     getGroups();
+    getDirectMessages();
 
     const channel = pusher.subscribe("my-channel");
     const handleChannelUpdate = () => {
@@ -62,7 +83,25 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
       channel.unbind("my-event", handleChannelUpdate);
       pusher.unsubscribe("my-channel");
     };
-  }, [getChannels, getGroups]);
+  }, [getChannels, getGroups, getDirectMessages]);
+
+  const handleStartDirectMessage = () => {
+    const recipient = window.prompt("Enter a friend's Firebase UID or email");
+    if (!recipient?.trim()) return;
+
+    axios
+      .post("/dm", { recipient: recipient.trim() })
+      .then((response) => {
+        getDirectMessages();
+        if (onNavigate) onNavigate();
+        history.push(`/dm/${response.data.id}`);
+      })
+      .catch((error) => {
+        window.alert(
+          error.response?.data?.error || "Could not start that direct message.",
+        );
+      });
+  };
 
   // FIXED: Now sends data to your Node/Mongo backend instead of Firebase
   const handleAddChannel = (e) => {
@@ -171,6 +210,43 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
               onNavigate={onNavigate}
             />
           ))}
+        </div>
+
+        <div className="sidebar__dms">
+          <div className="sidebar__dmsHeader">
+            <h4>Direct Messages</h4>
+            <button
+              type="button"
+              onClick={handleStartDirectMessage}
+              aria-label="Start a direct message"
+            >
+              +
+            </button>
+          </div>
+          <div className="sidebar__dmsList">
+            {directMessages?.map((directMessage) => (
+              <Link
+                className="sidebar__dmLink"
+                key={directMessage.id}
+                to={`/dm/${directMessage.id}`}
+                onClick={onNavigate}
+              >
+                <Avatar
+                  className="sidebar__dmAvatar"
+                  src={directMessage.otherParticipant?.photo}
+                >
+                  {directMessage.otherParticipant?.displayName?.[0] || "?"}
+                </Avatar>
+                <span>
+                  {directMessage.otherParticipant?.displayName ||
+                    "Unknown user"}
+                </span>
+              </Link>
+            ))}
+            {directMessages.length === 0 && (
+              <p className="sidebar__dmEmpty">Start a private conversation</p>
+            )}
+          </div>
         </div>
 
         <div className="sidebar__groups">

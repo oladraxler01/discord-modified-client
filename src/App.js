@@ -63,6 +63,7 @@ function App() {
               />
             )}
             <Switch>
+              <Route path="/dm/:roomId" component={Chat} />
               <Route path="/chat/:roomId" component={Chat} />
               <Route exact path="/" component={Chat} />
               <Route component={Chat} />

@@ -19,8 +19,10 @@ import {
 } from "./features/appSlice";
 import axios from "./axios"; // We import axios instead of firebase
 import { useParams } from "react-router-dom";
+import { useRouteMatch } from "react-router-dom";
 import usePusherRoom from "./hooks/usePusherRoom";
 import getResponseArray from "./utils/responseArrays";
+import { AnimatePresence, motion } from "framer-motion";
 
 const popularGifs = [
   {
@@ -52,10 +54,14 @@ const popularGifs = [
 const Chat = () => {
   const dispatch = useDispatch();
   const { roomId } = useParams();
+  const isDirectMessage = Boolean(useRouteMatch("/dm/:roomId"));
   const user = useSelector(selectUser);
   const channelId = useSelector(selectChannelId);
   const channelName = useSelector(selectChannelName);
   const activeChannelId = roomId || channelId;
+  const activeRoomName = isDirectMessage
+    ? channelName || "Direct message"
+    : channelName;
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [picker, setPicker] = useState(null);
@@ -145,6 +151,32 @@ const Chat = () => {
     if (!roomId) return undefined;
 
     let isCurrentRoom = true;
+
+    if (isDirectMessage) {
+      dispatch(
+        setChannelInfo({ channelId: roomId, channelName: "Direct message" }),
+      );
+      axios
+        .get(`/dm/${roomId}`)
+        .then((response) => {
+          if (!isCurrentRoom) return;
+          dispatch(
+            setChannelInfo({
+              channelId: roomId,
+              channelName:
+                response.data.otherParticipant?.displayName || "Direct message",
+            }),
+          );
+        })
+        .catch((error) =>
+          console.error("Could not resolve direct message:", error),
+        );
+
+      return () => {
+        isCurrentRoom = false;
+      };
+    }
+
     dispatch(setChannelInfo({ channelId: roomId, channelName: roomId }));
 
     axios
@@ -165,7 +197,7 @@ const Chat = () => {
     return () => {
       isCurrentRoom = false;
     };
-  }, [dispatch, roomId]);
+  }, [dispatch, isDirectMessage, roomId]);
 
   const getConversation = useCallback(() => {
     if (!activeChannelId) {
@@ -173,20 +205,28 @@ const Chat = () => {
       return;
     }
 
-    axios
-      .get(`/get/conversation?id=${activeChannelId}`)
+    const conversationRequest = isDirectMessage
+      ? axios.get(`/dm/${activeChannelId}`)
+      : axios.get(`/get/conversation?id=${activeChannelId}`);
+
+    conversationRequest
       .then((response) => {
+        if (isDirectMessage) {
+          setMessages(getResponseArray(response.data?.conversation));
+          return;
+        }
+
         const conversations = getResponseArray(response.data, "conversations");
         setMessages(getResponseArray(conversations[0]?.conversation));
       })
       .catch((error) => console.error("Could not load chat messages:", error));
-  }, [activeChannelId]);
+  }, [activeChannelId, isDirectMessage]);
 
   useEffect(() => {
     getConversation();
   }, [getConversation]);
 
-  usePusherRoom(activeChannelId, getConversation);
+  usePusherRoom(activeChannelId, getConversation, isDirectMessage);
 
   useEffect(() => {
     return () => {
@@ -222,8 +262,11 @@ const Chat = () => {
       payload.voiceData = voiceData;
     }
 
-    axios
-      .post(`/new/message?id=${activeChannelId}`, payload)
+    const messageRequest = isDirectMessage
+      ? axios.post(`/dm/${activeChannelId}/messages`, payload)
+      : axios.post(`/new/message?id=${activeChannelId}`, payload);
+
+    messageRequest
       .then(() => {
         setInput("");
         setVoiceData("");
@@ -290,166 +333,182 @@ const Chat = () => {
   const hasDraft = input.trim() !== "" || Boolean(voiceData);
 
   return (
-    <div className="chat">
-      <ChatHeader channelName={channelName} />
+    <AnimatePresence exitBeforeEnter initial={false}>
+      <motion.div
+        key={`${isDirectMessage ? "dm" : "channel"}-${activeChannelId || "empty"}`}
+        className="chat"
+        initial={{ opacity: 0, x: 8 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -8 }}
+        transition={{ duration: 0.16, ease: "easeOut" }}
+      >
+        <ChatHeader
+          channelName={activeRoomName}
+          isDirectMessage={isDirectMessage}
+        />
 
-      <div className="chat__messages">
-        {messages?.map((message, index) => (
-          <Message
-            key={index}
-            message={message.message}
-            timestamp={message.timestamp}
-            user={message.user}
-            voiceData={message.voiceData}
-          />
-        ))}
-      </div>
-
-      <div className="chat__input">
-        <AddCircleIcon className="chat__addIcon" fontSize="large" />
-        {isRecording && (
-          <div className="chat__recordingPanel" aria-live="polite">
-            <span className="chat__recordingDot" />
-            <span className="chat__recordingLabel">Recording</span>
-            <div className="chat__waveform" aria-hidden="true">
-              {audioLevels?.map((level, index) => (
-                <span
-                  key={`level-${index}`}
-                  className="chat__waveformBar"
-                  style={{ height: `${Math.max(12, level)}%` }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-        {!isRecording && voiceData && (
-          <div className="chat__voiceReady" aria-live="polite">
-            Voice note ready to send
-          </div>
-        )}
-        <form onSubmit={sendMessage} className="chat__form">
-          <input
-            type="text"
-            disabled={!activeChannelId}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={`Message #${channelName || "channel"}`}
-          />
-
-          <button
-            className={`chat__voiceButton ${isRecording ? "is-recording" : ""}`}
-            type="button"
-            disabled={!activeChannelId}
-            aria-label={isRecording ? "Stop recording" : "Record voice note"}
-            onClick={isRecording ? stopRecording : startRecording}
-          >
-            {isRecording ? (
-              <StopIcon fontSize="small" />
-            ) : (
-              <MicIcon fontSize="small" />
-            )}
-          </button>
-
-          <button
-            className="chat__sendButton"
-            disabled={!activeChannelId || !hasDraft}
-            type="submit"
-            aria-label="Send message"
-          >
-            <SendIcon fontSize="small" />
-            <span>{voiceData ? "Send voice" : "Send"}</span>
-          </button>
-        </form>
-
-        <div className="chat__inputIcon">
-          <CradGiftcardIcon className="chat__toolIcon" fontSize="large" />
-          <button
-            className={`chat__pickerButton ${picker === "gif" ? "is-active" : ""}`}
-            type="button"
-            aria-label="Choose a GIF"
-            aria-expanded={picker === "gif"}
-            onClick={() => setPicker(picker === "gif" ? null : "gif")}
-          >
-            <GifIcon fontSize="large" />
-          </button>
-          <button
-            className={`chat__pickerButton ${picker === "emoji" ? "is-active" : ""}`}
-            type="button"
-            aria-label="Choose an emoji"
-            aria-expanded={picker === "emoji"}
-            onClick={() => setPicker(picker === "emoji" ? null : "emoji")}
-          >
-            <EmojiEmoticonsIcon fontSize="large" />
-          </button>
+        <div className="chat__messages">
+          {messages?.map((message, index) => (
+            <Message
+              key={index}
+              message={message.message}
+              timestamp={message.timestamp}
+              user={message.user}
+              voiceData={message.voiceData}
+            />
+          ))}
         </div>
-      </div>
-      {picker === "emoji" && (
-        <div className="chat__picker chat__emojiPicker">
-          <EmojiPicker
-            onEmojiClick={(emojiData) =>
-              setInput((current) => current + emojiData.emoji)
-            }
-            width="100%"
-            height={360}
-            theme={Theme.DARK}
-            emojiStyle={EmojiStyle.TWITTER}
-            previewConfig={{ showPreview: false }}
-          />
-        </div>
-      )}
-      {picker === "gif" && (
-        <div className="chat__picker chat__gifPicker">
-          <div className="chat__gifHeading">
-            <div>
-              <strong>Popular GIFs</strong>
-              <span>Pick one to add it to your message</span>
+
+        <div className="chat__input">
+          <AddCircleIcon className="chat__addIcon" fontSize="large" />
+          {isRecording && (
+            <div className="chat__recordingPanel" aria-live="polite">
+              <span className="chat__recordingDot" />
+              <span className="chat__recordingLabel">Recording</span>
+              <div className="chat__waveform" aria-hidden="true">
+                {audioLevels?.map((level, index) => (
+                  <span
+                    key={`level-${index}`}
+                    className="chat__waveformBar"
+                    style={{ height: `${Math.max(12, level)}%` }}
+                  />
+                ))}
+              </div>
             </div>
-            <a
-              href="https://giphy.com/search"
-              target="_blank"
-              rel="noopener noreferrer"
+          )}
+          {!isRecording && voiceData && (
+            <div className="chat__voiceReady" aria-live="polite">
+              Voice note ready to send
+            </div>
+          )}
+          <form onSubmit={sendMessage} className="chat__form">
+            <input
+              type="text"
+              disabled={!activeChannelId}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={
+                isDirectMessage
+                  ? `Message ${activeRoomName || "direct message"}`
+                  : `Message #${activeRoomName || "channel"}`
+              }
+            />
+
+            <button
+              className={`chat__voiceButton ${isRecording ? "is-recording" : ""}`}
+              type="button"
+              disabled={!activeChannelId}
+              aria-label={isRecording ? "Stop recording" : "Record voice note"}
+              onClick={isRecording ? stopRecording : startRecording}
             >
-              Explore GIPHY
-            </a>
-          </div>
-          <input
-            className="chat__gifSearch"
-            value={gifSearch}
-            onChange={(event) => setGifSearch(event.target.value)}
-            placeholder="Filter popular GIFs..."
-            aria-label="Filter GIFs"
-          />
-          <div className="chat__gifGrid">
-            {popularGifs
-              .filter((gif) =>
-                gif.label.toLowerCase().includes(gifSearch.toLowerCase()),
-              )
-              ?.map((gif) => (
-                <button
-                  className="chat__gifCard"
-                  key={gif.label}
-                  type="button"
-                  onClick={() => {
-                    setInput(gif.url);
-                    setPicker(null);
-                  }}
-                  aria-label={`Add ${gif.label} GIF`}
-                >
-                  <img src={gif.url} alt={gif.label} loading="lazy" />
-                  <span>{gif.label}</span>
-                </button>
-              ))}
-            {popularGifs.filter((gif) =>
-              gif.label.toLowerCase().includes(gifSearch.toLowerCase()),
-            ).length === 0 && (
-              <p className="chat__gifEmpty">
-                No featured GIFs match that filter.
-              </p>
-            )}
+              {isRecording ? (
+                <StopIcon fontSize="small" />
+              ) : (
+                <MicIcon fontSize="small" />
+              )}
+            </button>
+
+            <button
+              className="chat__sendButton"
+              disabled={!activeChannelId || !hasDraft}
+              type="submit"
+              aria-label="Send message"
+            >
+              <SendIcon fontSize="small" />
+              <span>{voiceData ? "Send voice" : "Send"}</span>
+            </button>
+          </form>
+
+          <div className="chat__inputIcon">
+            <CradGiftcardIcon className="chat__toolIcon" fontSize="large" />
+            <button
+              className={`chat__pickerButton ${picker === "gif" ? "is-active" : ""}`}
+              type="button"
+              aria-label="Choose a GIF"
+              aria-expanded={picker === "gif"}
+              onClick={() => setPicker(picker === "gif" ? null : "gif")}
+            >
+              <GifIcon fontSize="large" />
+            </button>
+            <button
+              className={`chat__pickerButton ${picker === "emoji" ? "is-active" : ""}`}
+              type="button"
+              aria-label="Choose an emoji"
+              aria-expanded={picker === "emoji"}
+              onClick={() => setPicker(picker === "emoji" ? null : "emoji")}
+            >
+              <EmojiEmoticonsIcon fontSize="large" />
+            </button>
           </div>
         </div>
-      )}
-    </div>
+        {picker === "emoji" && (
+          <div className="chat__picker chat__emojiPicker">
+            <EmojiPicker
+              onEmojiClick={(emojiData) =>
+                setInput((current) => current + emojiData.emoji)
+              }
+              width="100%"
+              height={360}
+              theme={Theme.DARK}
+              emojiStyle={EmojiStyle.TWITTER}
+              previewConfig={{ showPreview: false }}
+            />
+          </div>
+        )}
+        {picker === "gif" && (
+          <div className="chat__picker chat__gifPicker">
+            <div className="chat__gifHeading">
+              <div>
+                <strong>Popular GIFs</strong>
+                <span>Pick one to add it to your message</span>
+              </div>
+              <a
+                href="https://giphy.com/search"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Explore GIPHY
+              </a>
+            </div>
+            <input
+              className="chat__gifSearch"
+              value={gifSearch}
+              onChange={(event) => setGifSearch(event.target.value)}
+              placeholder="Filter popular GIFs..."
+              aria-label="Filter GIFs"
+            />
+            <div className="chat__gifGrid">
+              {popularGifs
+                .filter((gif) =>
+                  gif.label.toLowerCase().includes(gifSearch.toLowerCase()),
+                )
+                ?.map((gif) => (
+                  <button
+                    className="chat__gifCard"
+                    key={gif.label}
+                    type="button"
+                    onClick={() => {
+                      setInput(gif.url);
+                      setPicker(null);
+                    }}
+                    aria-label={`Add ${gif.label} GIF`}
+                  >
+                    <img src={gif.url} alt={gif.label} loading="lazy" />
+                    <span>{gif.label}</span>
+                  </button>
+                ))}
+              {popularGifs.filter((gif) =>
+                gif.label.toLowerCase().includes(gifSearch.toLowerCase()),
+              ).length === 0 && (
+                <p className="chat__gifEmpty">
+                  No featured GIFs match that filter.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

@@ -6,6 +6,12 @@ The frontend uses `https://discord-modified-api.onrender.com` as its default API
 
 Each text channel has a **Copy link** action in the sidebar. Invite URLs use `/chat/:roomId`; opening one selects that room and subscribes to its `chat-<roomId>` Pusher channel. When deploying the frontend as a static site, configure the host to rewrite unknown paths such as `/chat/*` to `index.html` so direct invite links load the React app.
 
+## Direct messages
+
+Signed-in users can start a private one-to-one conversation from the **Direct Messages** section by entering another Firebase user's UID or email. The backend verifies Firebase ID tokens, only returns a DM to its two participants, and uses an authenticated Pusher private channel for new-message notifications. Configure `FIREBASE_SERVICE_ACCOUNT_JSON` on the backend host using the Firebase project's service-account JSON (keep it in deployment secrets; never commit it). Without that server-side credential, private messaging intentionally fails closed.
+
+The client uses Framer Motion 4 for subtle transitions between rooms and uses the existing Discord-inspired CSS theme; this repository does not use Tailwind.
+
 ## Available Scripts
 
 In the project directory, you can run:
