@@ -340,9 +340,7 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
             className="sidebar__friendCode"
             type="button"
             onClick={
-              friendCodeStatus === "ready"
-                ? handleCopyFriendCode
-                : getFriends
+              friendCodeStatus === "ready" ? handleCopyFriendCode : getFriends
             }
             title="Copy your friend code"
           >
