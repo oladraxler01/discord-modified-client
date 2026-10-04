@@ -255,6 +255,14 @@
   font-size: 11px;
 }
 
+.sidebar__friendCodeError {
+  padding: 2px 7px 5px;
+  color: #ffb7bd;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 .sidebar__friendRequest,
 .sidebar__friendRow {
   display: flex;

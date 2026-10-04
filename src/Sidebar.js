@@ -30,6 +30,8 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
   const [groups, setGroups] = useState([]);
   const [directMessages, setDirectMessages] = useState([]);
   const [friendCode, setFriendCode] = useState("");
+  const [friendCodeStatus, setFriendCodeStatus] = useState("loading");
+  const [friendCodeError, setFriendCodeError] = useState("");
   const [friends, setFriends] = useState([]);
   const [incomingRequests, setIncomingRequests] = useState([]);
 
@@ -74,21 +76,38 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
   const getFriends = useCallback(() => {
     if (!userId) {
       setFriendCode("");
+      setFriendCodeStatus("loading");
+      setFriendCodeError("");
       setFriends([]);
       setIncomingRequests([]);
       return;
     }
 
+    setFriendCodeStatus("loading");
+    setFriendCodeError("");
     axios
       .get("/friends")
       .then((response) => {
-        setFriendCode(response.data.friendCode || "");
+        const nextFriendCode = response.data?.friendCode || "";
+        setFriendCode(nextFriendCode);
+        setFriendCodeStatus(nextFriendCode ? "ready" : "error");
+        if (!nextFriendCode) {
+          setFriendCodeError("Server did not return a friend code.");
+        }
         setFriends(getResponseArray(response.data, "friends"));
         setIncomingRequests(
           getResponseArray(response.data, "incomingRequests"),
         );
       })
-      .catch((error) => console.error("Could not load friends:", error));
+      .catch((error) => {
+        console.error("Could not load friends:", error);
+        setFriendCode("");
+        setFriendCodeStatus("error");
+        setFriendCodeError(
+          error.response?.data?.error ||
+            "Could not load your friend code. Check your connection and retry.",
+        );
+      });
   }, [userId]);
 
   useEffect(() => {
@@ -139,7 +158,10 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
   };
 
   const handleCopyFriendCode = async () => {
-    if (!friendCode) return;
+    if (!friendCode) {
+      getFriends();
+      return;
+    }
     try {
       await navigator.clipboard.writeText(friendCode);
       window.alert("Your friend code was copied.");
@@ -317,11 +339,24 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
           <button
             className="sidebar__friendCode"
             type="button"
-            onClick={handleCopyFriendCode}
+            onClick={
+              friendCodeStatus === "ready"
+                ? handleCopyFriendCode
+                : getFriends
+            }
             title="Copy your friend code"
           >
-            Your code: {friendCode || "Loading…"}
+            {friendCodeStatus === "loading"
+              ? "Friend code: Loading…"
+              : friendCodeStatus === "error"
+                ? "Friend code unavailable — Retry"
+                : `Your code: ${friendCode}`}
           </button>
+          {friendCodeStatus === "error" && friendCodeError && (
+            <p className="sidebar__friendCodeError" role="alert">
+              {friendCodeError}
+            </p>
+          )}
           {incomingRequests.map((request) => (
             <div className="sidebar__friendRequest" key={request.id}>
               <span>{request.sender?.displayName || "New friend"}</span>
