@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 import Sidebar from "./Sidebar";
 import Chat from "./Chat";
+import ChannelInvite from "./ChannelInvite";
 import { selectUser } from "./features/userSlice";
 import { useDispatch, useSelector } from "react-redux";
 import Login from "./Login";
@@ -63,6 +64,7 @@ function App() {
               />
             )}
             <Switch>
+              <Route path="/invite/:token" component={ChannelInvite} />
               <Route path="/dm/:roomId" component={Chat} />
               <Route path="/chat/:roomId" component={Chat} />
               <Route exact path="/" component={Chat} />

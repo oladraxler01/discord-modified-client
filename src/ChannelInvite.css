@@ -1,0 +1,62 @@
+.channelInvite {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  padding: 24px;
+  color: #f4f4fb;
+}
+
+.channelInvite__card {
+  width: min(480px, 100%);
+  padding: clamp(24px, 5vw, 40px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  background: rgba(8, 9, 17, 0.42);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(28px) saturate(135%);
+  -webkit-backdrop-filter: blur(28px) saturate(135%);
+}
+
+.channelInvite__eyebrow {
+  margin-bottom: 12px;
+  color: #a99bff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.channelInvite__card h1 {
+  margin-bottom: 12px;
+  font-size: clamp(25px, 6vw, 34px);
+}
+
+.channelInvite__description {
+  margin-bottom: 24px;
+  color: #c5c6d3;
+  line-height: 1.6;
+}
+
+.channelInvite__join {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8876f3, #5865f2);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.channelInvite__join:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.channelInvite__error {
+  margin-top: 16px;
+  color: #ffb7bd;
+  line-height: 1.5;
+}

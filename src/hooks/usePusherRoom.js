@@ -14,13 +14,20 @@ const pusher = new Pusher("e97d599fd9d4473f90d2", {
   },
 });
 
-const usePusherRoom = (roomId, onMessage, isDirectMessage = false) => {
+const usePusherRoom = (
+  roomId,
+  onMessage,
+  isDirectMessage = false,
+  isInviteOnly = false,
+) => {
   useEffect(() => {
     if (!roomId) return undefined;
 
     const roomChannelName = isDirectMessage
       ? `private-dm-${roomId}`
-      : `chat-${roomId}`;
+      : isInviteOnly
+        ? `private-room-${roomId}`
+        : `chat-${roomId}`;
     const roomChannel = pusher.subscribe(roomChannelName);
 
     roomChannel.bind("newMessage", onMessage);
@@ -29,7 +36,7 @@ const usePusherRoom = (roomId, onMessage, isDirectMessage = false) => {
       roomChannel.unbind("newMessage", onMessage);
       pusher.unsubscribe(roomChannelName);
     };
-  }, [roomId, onMessage, isDirectMessage]);
+  }, [roomId, onMessage, isDirectMessage, isInviteOnly]);
 };
 
 export default usePusherRoom;

@@ -1,16 +1,26 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import axios from "./axios";
 import "./SidebarChannel.css";
 
-const SidebarChannel = ({ id, channelName, onNavigate }) => {
-  const copyRoomLink = async () => {
-    const roomLink = `${window.location.origin}/chat/${encodeURIComponent(id)}`;
-
+const SidebarChannel = ({
+  id,
+  channelName,
+  isPrivate,
+  isOwner,
+  onNavigate,
+}) => {
+  const createInvite = async () => {
     try {
-      await navigator.clipboard.writeText(roomLink);
-      alert(`Chat link copied for #${channelName}`);
+      const response = await axios.post(`/channels/${id}/invites`);
+      const inviteLink = `${window.location.origin}/invite/${response.data.token}`;
+      await navigator.clipboard.writeText(inviteLink);
+      window.alert(`Seven-day invite link copied for #${channelName}`);
     } catch (error) {
-      window.prompt("Copy this chat link:", roomLink);
+      const responseError = error.response?.data?.error;
+      window.alert(
+        responseError || "Could not create or copy the invite link.",
+      );
     }
   };
 
@@ -26,14 +36,16 @@ const SidebarChannel = ({ id, channelName, onNavigate }) => {
           {channelName}
         </h4>
       </Link>
-      <button
-        className="sidebarChannel__copy"
-        type="button"
-        onClick={copyRoomLink}
-        aria-label={`Copy link to ${channelName}`}
-      >
-        Copy link
-      </button>
+      {isPrivate && isOwner && (
+        <button
+          className="sidebarChannel__copy"
+          type="button"
+          onClick={createInvite}
+          aria-label={`Create invite to ${channelName}`}
+        >
+          Invite
+        </button>
+      )}
     </div>
   );
 };

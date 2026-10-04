@@ -34,3 +34,18 @@
   max-height: 40vh;
   object-fit: contain;
 }
+
+.login__error {
+  width: min(520px, 100%);
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 145, 145, 0.36);
+  border-radius: 10px;
+  background: rgba(90, 22, 38, 0.38);
+  color: #ffe0e2;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}

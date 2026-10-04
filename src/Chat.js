@@ -64,9 +64,14 @@ const Chat = () => {
     : channelName;
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
+  const [roomError, setRoomError] = useState("");
+  const [isInviteOnly, setIsInviteOnly] = useState(false);
+  const [roomAccessChecked, setRoomAccessChecked] = useState(false);
+  const [roomAuthorized, setRoomAuthorized] = useState(false);
   const [picker, setPicker] = useState(null);
   const [gifSearch, setGifSearch] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingError, setRecordingError] = useState("");
   const [voiceData, setVoiceData] = useState("");
   const [audioLevels, setAudioLevels] = useState(Array(18).fill(12));
   const mediaRecorderRef = useRef(null);
@@ -75,6 +80,8 @@ const Chat = () => {
   const analyserRef = useRef(null);
   const sourceNodeRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const isRecordingRef = useRef(false);
+  const micStreamRef = useRef(null);
 
   const stopAudioMonitoring = () => {
     if (animationFrameRef.current) {
@@ -98,7 +105,7 @@ const Chat = () => {
     }
   };
 
-  const startAudioMonitoring = (stream) => {
+  const startAudioMonitoring = async (stream) => {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 
     if (!AudioContextClass) {
@@ -118,11 +125,15 @@ const Chat = () => {
     analyserRef.current = analyser;
     sourceNodeRef.current = source;
 
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+
     const bufferLength = analyser.frequencyBinCount;
     const frequencyData = new Uint8Array(bufferLength);
 
     const updateWaveform = () => {
-      if (!analyserRef.current || !isRecording) {
+      if (!analyserRef.current || !isRecordingRef.current) {
         setAudioLevels(Array(18).fill(12));
         return;
       }
@@ -151,8 +162,12 @@ const Chat = () => {
     if (!roomId) return undefined;
 
     let isCurrentRoom = true;
+    setRoomError("");
+    setRoomAccessChecked(false);
+    setRoomAuthorized(false);
 
     if (isDirectMessage) {
+      setIsInviteOnly(false);
       dispatch(
         setChannelInfo({ channelId: roomId, channelName: "Direct message" }),
       );
@@ -160,6 +175,7 @@ const Chat = () => {
         .get(`/dm/${roomId}`)
         .then((response) => {
           if (!isCurrentRoom) return;
+          setRoomAuthorized(true);
           dispatch(
             setChannelInfo({
               channelId: roomId,
@@ -168,9 +184,17 @@ const Chat = () => {
             }),
           );
         })
-        .catch((error) =>
-          console.error("Could not resolve direct message:", error),
-        );
+        .catch((error) => {
+          if (isCurrentRoom) {
+            setRoomError(
+              error.response?.data?.error ||
+                "You do not have access to this direct message.",
+            );
+          }
+        })
+        .finally(() => {
+          if (isCurrentRoom) setRoomAccessChecked(true);
+        });
 
       return () => {
         isCurrentRoom = false;
@@ -187,12 +211,27 @@ const Chat = () => {
         const rooms = getResponseArray(response.data, "channels");
         const room = rooms.find((item) => item.id === roomId);
         if (room) {
+          setRoomAuthorized(true);
+          setIsInviteOnly(Boolean(room.isPrivate));
           dispatch(
             setChannelInfo({ channelId: roomId, channelName: room.name }),
           );
+        } else {
+          setRoomError(
+            "This channel is private, expired, or you do not have access.",
+          );
         }
       })
-      .catch((error) => console.error("Could not resolve chat room:", error));
+      .catch((error) => {
+        if (isCurrentRoom) {
+          setRoomError(
+            error.response?.data?.error || "Could not check channel access.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isCurrentRoom) setRoomAccessChecked(true);
+      });
 
     return () => {
       isCurrentRoom = false;
@@ -213,20 +252,32 @@ const Chat = () => {
       .then((response) => {
         if (isDirectMessage) {
           setMessages(getResponseArray(response.data?.conversation));
+          setRoomError("");
           return;
         }
 
         const conversations = getResponseArray(response.data, "conversations");
         setMessages(getResponseArray(conversations[0]?.conversation));
+        setRoomError("");
       })
-      .catch((error) => console.error("Could not load chat messages:", error));
+      .catch((error) => {
+        console.error("Could not load chat messages:", error);
+        setRoomError(
+          error.response?.data?.error || "You do not have access to this chat.",
+        );
+      });
   }, [activeChannelId, isDirectMessage]);
 
   useEffect(() => {
     getConversation();
   }, [getConversation]);
 
-  usePusherRoom(activeChannelId, getConversation, isDirectMessage);
+  usePusherRoom(
+    roomAccessChecked && roomAuthorized ? activeChannelId : null,
+    getConversation,
+    isDirectMessage,
+    isInviteOnly,
+  );
 
   useEffect(() => {
     return () => {
@@ -236,6 +287,10 @@ const Chat = () => {
         mediaRecorderRef.current.state === "recording"
       ) {
         mediaRecorderRef.current.stop();
+      }
+      isRecordingRef.current = false;
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
   }, []);
@@ -279,16 +334,64 @@ const Chat = () => {
   const startRecording = async () => {
     if (!activeChannelId) return;
 
+    setRecordingError("");
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setRecordingError(
+        "Microphone access requires HTTPS and a supported browser.",
+      );
+      return;
+    }
+
+    if (typeof MediaRecorder === "undefined") {
+      setRecordingError("Audio recording is not supported by this browser.");
+      return;
+    }
+
+    let stream;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      startAudioMonitoring(stream);
-      const recorder = new MediaRecorder(stream);
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      micStreamRef.current = stream;
+
+      const supportedMimeTypes = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/ogg",
+        "audio/mp4",
+      ];
+      const mimeType = supportedMimeTypes.find((type) =>
+        MediaRecorder.isTypeSupported(type),
+      );
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+
       audioChunksRef.current = [];
       mediaRecorderRef.current = recorder;
 
       setVoiceData("");
       setInput("");
+      isRecordingRef.current = true;
       setIsRecording(true);
+
+      recorder.onerror = (event) => {
+        console.error("Audio recording failed:", event.error);
+        isRecordingRef.current = false;
+        setIsRecording(false);
+        setRecordingError(
+          "Recording stopped because the microphone had an error.",
+        );
+        stream.getTracks().forEach((track) => track.stop());
+        stopAudioMonitoring();
+      };
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -296,37 +399,73 @@ const Chat = () => {
         }
       };
 
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : "audio/webm";
-
-      recorder.mimeType = mimeType;
-
       recorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        isRecordingRef.current = false;
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: recorder.mimeType || mimeType || "application/octet-stream",
+        });
+        stream.getTracks().forEach((track) => track.stop());
+        micStreamRef.current = null;
+
+        if (!audioBlob.size) {
+          setIsRecording(false);
+          setRecordingError(
+            "No audio was captured. Check your microphone input and try again.",
+          );
+          stopAudioMonitoring();
+          return;
+        }
+
         const reader = new FileReader();
 
         reader.onloadend = () => {
           setVoiceData(reader.result);
           setIsRecording(false);
+          setAudioLevels(Array(18).fill(12));
+          stopAudioMonitoring();
+        };
+
+        reader.onerror = () => {
+          setIsRecording(false);
+          setRecordingError(
+            "The recorded audio could not be prepared. Please try again.",
+          );
           stopAudioMonitoring();
         };
 
         reader.readAsDataURL(audioBlob);
-        stream.getTracks().forEach((track) => track.stop());
       };
 
       recorder.start();
+      startAudioMonitoring(stream).catch((error) => {
+        console.warn("Live microphone meter is unavailable:", error);
+      });
     } catch (error) {
       console.error("Microphone access failed:", error);
+      isRecordingRef.current = false;
       setIsRecording(false);
+      setRecordingError(
+        error.name === "NotAllowedError" ||
+          error.name === "PermissionDeniedError"
+          ? "Microphone permission is blocked. Allow microphone access in your browser settings, then retry."
+          : error.name === "NotFoundError"
+            ? "No microphone was found on this device."
+            : "Could not start recording. Check microphone access and try again.",
+      );
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      micStreamRef.current = null;
+      stopAudioMonitoring();
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      isRecordingRef.current = false;
+      if (mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
     }
   };
 
@@ -348,10 +487,15 @@ const Chat = () => {
         />
 
         <div className="chat__messages">
+          {roomError && (
+            <div className="chat__roomError" role="alert">
+              {roomError}
+            </div>
+          )}
           {messages?.map((message, index) => (
             <Message
               key={index}
-              message={message.message}
+              message={message._id}
               timestamp={message.timestamp}
               user={message.user}
               voiceData={message.voiceData}
@@ -380,6 +524,11 @@ const Chat = () => {
             <div className="chat__voiceReady" aria-live="polite">
               Voice note ready to send
             </div>
+          )}
+          {recordingError && (
+            <p className="chat__recordingError" role="alert">
+              {recordingError}
+            </p>
           )}
           <form onSubmit={sendMessage} className="chat__form">
             <input

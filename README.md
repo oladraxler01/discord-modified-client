@@ -12,6 +12,12 @@ Signed-in users can start a private one-to-one conversation from the **Direct Me
 
 The client uses Framer Motion 4 for subtle transitions between rooms and uses the existing Discord-inspired CSS theme; this repository does not use Tailwind.
 
+## Friends and private channel invites
+
+Use **Add friend** to enter a friend's `FRIEND-XXXXXXXX` code, share your own code from the Friends section, and accept incoming requests. Once accepted, select **Message** beside a friend to open a DM.
+
+New text channels are private to their creator. The owner can use **Invite** to create a seven-day link. The recipient signs in, sees which single channel the invite grants access to, then accepts; that adds membership to only that channel. Existing legacy channels require the one-time owner migration described in the backend README. Direct room IDs alone do not grant membership.
+
 ## Available Scripts
 
 In the project directory, you can run:

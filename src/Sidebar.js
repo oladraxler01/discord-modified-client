@@ -29,6 +29,9 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
   const [channels, setChannels] = useState([]);
   const [groups, setGroups] = useState([]);
   const [directMessages, setDirectMessages] = useState([]);
+  const [friendCode, setFriendCode] = useState("");
+  const [friends, setFriends] = useState([]);
+  const [incomingRequests, setIncomingRequests] = useState([]);
 
   const getChannels = useCallback(() => {
     axios
@@ -68,10 +71,31 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
       });
   }, [userId]);
 
+  const getFriends = useCallback(() => {
+    if (!userId) {
+      setFriendCode("");
+      setFriends([]);
+      setIncomingRequests([]);
+      return;
+    }
+
+    axios
+      .get("/friends")
+      .then((response) => {
+        setFriendCode(response.data.friendCode || "");
+        setFriends(getResponseArray(response.data, "friends"));
+        setIncomingRequests(
+          getResponseArray(response.data, "incomingRequests"),
+        );
+      })
+      .catch((error) => console.error("Could not load friends:", error));
+  }, [userId]);
+
   useEffect(() => {
     getChannels();
     getGroups();
     getDirectMessages();
+    getFriends();
 
     const channel = pusher.subscribe("my-channel");
     const handleChannelUpdate = () => {
@@ -83,14 +107,13 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
       channel.unbind("my-event", handleChannelUpdate);
       pusher.unsubscribe("my-channel");
     };
-  }, [getChannels, getGroups, getDirectMessages]);
+  }, [getChannels, getGroups, getDirectMessages, getFriends]);
 
-  const handleStartDirectMessage = () => {
-    const recipient = window.prompt("Enter a friend's Firebase UID or email");
-    if (!recipient?.trim()) return;
+  const handleStartDirectMessage = (recipientUid) => {
+    if (!recipientUid) return;
 
     axios
-      .post("/dm", { recipient: recipient.trim() })
+      .post("/dm", { recipient: recipientUid })
       .then((response) => {
         getDirectMessages();
         if (onNavigate) onNavigate();
@@ -99,6 +122,39 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
       .catch((error) => {
         window.alert(
           error.response?.data?.error || "Could not start that direct message.",
+        );
+      });
+  };
+
+  const handleAddFriend = () => {
+    const code = window.prompt("Enter your friend's friend code");
+    if (!code?.trim()) return;
+
+    axios
+      .post("/friend-requests", { friendCode: code.trim() })
+      .then(() => window.alert("Friend request sent."))
+      .catch((error) => {
+        window.alert(error.response?.data?.error || "Could not send request.");
+      });
+  };
+
+  const handleCopyFriendCode = async () => {
+    if (!friendCode) return;
+    try {
+      await navigator.clipboard.writeText(friendCode);
+      window.alert("Your friend code was copied.");
+    } catch (error) {
+      window.prompt("Share this friend code:", friendCode);
+    }
+  };
+
+  const handleAcceptFriendRequest = (requestId) => {
+    axios
+      .post(`/friend-requests/${requestId}/accept`)
+      .then(() => getFriends())
+      .catch((error) => {
+        window.alert(
+          error.response?.data?.error || "Could not accept request.",
         );
       });
   };
@@ -114,10 +170,35 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
           channelName: channelName,
         })
         .then(() => {
-          // Refresh the channel list immediately after adding
           getChannels();
+        })
+        .catch((error) => {
+          window.alert(
+            error.response?.data?.error || "Could not create channel.",
+          );
         });
     }
+  };
+
+  const handleSecureLegacyChannels = () => {
+    const confirmed = window.confirm(
+      "Secure existing legacy channels as private channels owned by your account? Other users will lose access until you invite them. This requires CHANNEL_MIGRATION_OWNER_UID to match your Firebase UID in the backend environment.",
+    );
+    if (!confirmed) return;
+
+    axios
+      .post("/channels/migrate-legacy")
+      .then((response) => {
+        getChannels();
+        window.alert(
+          `${response.data.securedCount} legacy channel(s) secured.`,
+        );
+      })
+      .catch((error) => {
+        window.alert(
+          error.response?.data?.error || "Could not secure legacy channels.",
+        );
+      });
   };
 
   const handleCreateGroup = () => {
@@ -198,18 +279,78 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
             <ExpandMoreIcon />
             <h4>Text Channels</h4>
           </div>
-          <AddIcon onClick={handleAddChannel} className="sidebar__addChannel" />
+          <div className="sidebar__channelActions">
+            <button
+              className="sidebar__secureLegacy"
+              type="button"
+              onClick={handleSecureLegacyChannels}
+            >
+              Secure old
+            </button>
+            <AddIcon
+              onClick={handleAddChannel}
+              className="sidebar__addChannel"
+            />
+          </div>
         </div>
         <div className="sidebar__channelsList">
           {/* FIXED: Mapped to match your backend's { id, name } structure */}
-          {channels?.map(({ id, name }) => (
+          {channels?.map(({ id, name, isPrivate, isOwner }) => (
             <SidebarChannel
               key={id}
               id={id}
               channelName={name}
+              isPrivate={isPrivate}
+              isOwner={isOwner}
               onNavigate={onNavigate}
             />
           ))}
+        </div>
+
+        <div className="sidebar__friends">
+          <div className="sidebar__friendsHeader">
+            <h4>Friends</h4>
+            <button type="button" onClick={handleAddFriend}>
+              Add friend
+            </button>
+          </div>
+          <button
+            className="sidebar__friendCode"
+            type="button"
+            onClick={handleCopyFriendCode}
+            title="Copy your friend code"
+          >
+            Your code: {friendCode || "Loading…"}
+          </button>
+          {incomingRequests.map((request) => (
+            <div className="sidebar__friendRequest" key={request.id}>
+              <span>{request.sender?.displayName || "New friend"}</span>
+              <button
+                type="button"
+                onClick={() => handleAcceptFriendRequest(request.id)}
+              >
+                Accept
+              </button>
+            </div>
+          ))}
+          {friends.map((friend) => (
+            <button
+              className="sidebar__friendRow"
+              key={friend.uid}
+              type="button"
+              onClick={() => handleStartDirectMessage(friend.uid)}
+              title={`Message ${friend.displayName}`}
+            >
+              <Avatar src={friend.photo} className="sidebar__dmAvatar">
+                {friend.displayName?.[0] || "?"}
+              </Avatar>
+              <span>{friend.displayName || "Friend"}</span>
+              <span className="sidebar__friendMessage">Message</span>
+            </button>
+          ))}
+          {friends.length === 0 && incomingRequests.length === 0 && (
+            <p className="sidebar__dmEmpty">Add a friend with their code</p>
+          )}
         </div>
 
         <div className="sidebar__dms">
@@ -217,10 +358,10 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
             <h4>Direct Messages</h4>
             <button
               type="button"
-              onClick={handleStartDirectMessage}
-              aria-label="Start a direct message"
+              onClick={handleAddFriend}
+              aria-label="Add a friend"
             >
-              +
+              + Friend
             </button>
           </div>
           <div className="sidebar__dmsList">
