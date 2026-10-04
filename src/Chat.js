@@ -495,7 +495,8 @@ const Chat = () => {
           {messages?.map((message, index) => (
             <Message
               key={index}
-              message={message._id}
+              id={message._id}
+              message={message.message}
               timestamp={message.timestamp}
               user={message.user}
               voiceData={message.voiceData}

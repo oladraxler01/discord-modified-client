@@ -8,7 +8,7 @@
   height: 100%;
   min-height: 0;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   background: rgba(8, 8, 15, 0.34);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(28px) saturate(135%);
@@ -26,8 +26,25 @@
 }
 
 .sidebar__channels {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.sidebar__channels::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar__channels::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar__channels::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .sidebar__groups {

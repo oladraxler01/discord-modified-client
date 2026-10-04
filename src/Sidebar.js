@@ -463,20 +463,6 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
         </div>
       </div>
 
-      <div className="sidebar__voice">
-        <SignalCellularAltIcon
-          className="sidebar__voiceIcons"
-          fontSize="large"
-        />
-        <div className="sidebar__voiceInfo">
-          <h3>Voice Connected</h3>
-          <p>Stream</p>
-        </div>
-        <div className="sidebar__voiceIcons">
-          <InfoOutlinedIcon />
-          <CallIcon />
-        </div>
-      </div>
       <div className="sidebar__profile">
         <Avatar src={user.photo} onClick={() => auth.signOut()} />
         <div className="sidebar__profileInfo">
