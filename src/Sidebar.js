@@ -4,9 +4,6 @@ import "./Sidebar.css";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import AddIcon from "@material-ui/icons/Add";
 import SidebarChannel from "./SidebarChannel";
-import SignalCellularAltIcon from "@material-ui/icons/SignalCellularAlt";
-import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
-import CallIcon from "@material-ui/icons/Call";
 import { Avatar } from "@material-ui/core";
 import MicIcon from "@material-ui/icons/Mic";
 import HeadsetIcon from "@material-ui/icons/Headset";
@@ -285,6 +282,23 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
     }
   };
 
+  const startGroupCall = () => {
+    const callWindow = window.open(
+      "https://meet.google.com/new",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    if (!callWindow) {
+      window.alert("Your browser blocked the call window. Allow popups and try again.");
+      return;
+    }
+
+    window.alert(
+      "A Google Meet room opened. Copy its link and share it with this group.",
+    );
+  };
+
   return (
     <div
       id="app-sidebar"
@@ -446,6 +460,9 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
                 <span>{group.inviteCode}</span>
               </div>
               <div className="sidebar__groupButtons">
+                <button type="button" onClick={startGroupCall}>
+                  Call
+                </button>
                 <button type="button" onClick={() => handleCopyInvite(group)}>
                   Copy link
                 </button>

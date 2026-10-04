@@ -46,6 +46,35 @@
   color: white;
 }
 
+.chatHeader__callButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(111, 221, 170, 0.24);
+  border-radius: 10px;
+  background: rgba(57, 177, 124, 0.13);
+  color: #a9f0ce;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.chatHeader__callButton:hover {
+  border-color: rgba(111, 221, 170, 0.52);
+  background: rgba(57, 177, 124, 0.24);
+}
+
+.chatHeader__callButton .MuiSvgIcon-root {
+  font-size: 19px;
+}
+
+.chatHeader__callButton span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .chatHeader__search {
   display: flex;
   align-items: center;
@@ -93,6 +122,11 @@
 
   .chatHeader__right > .MuiSvgIcon-root {
     display: none;
+  }
+
+  .chatHeader__callButton {
+    min-height: 32px;
+    padding: 0 8px;
   }
 
   .chatHeader__search {

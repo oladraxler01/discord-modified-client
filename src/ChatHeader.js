@@ -6,8 +6,9 @@ import PeopleAltRounded from "@material-ui/icons/PeopleAltRounded";
 import SearchRoundedIcon from "@material-ui/icons/SearchRounded";
 import SendRoundedIcon from "@material-ui/icons/SendRounded";
 import HelpRoundedIcon from "@material-ui/icons/HelpRounded";
+import CallIcon from "@material-ui/icons/Call";
 
-const ChatHeader = ({ channelName, isDirectMessage = false }) => {
+const ChatHeader = ({ channelName, isDirectMessage = false, onStartCall }) => {
   return (
     <div className="chatHeader">
       <div className="chatHeader__left">
@@ -20,6 +21,16 @@ const ChatHeader = ({ channelName, isDirectMessage = false }) => {
       </div>
 
       <div className="chatHeader__right">
+        <button
+          className="chatHeader__callButton"
+          type="button"
+          onClick={onStartCall}
+          aria-label={`Start a call for ${channelName || "this conversation"}`}
+          title="Start a Google Meet call"
+        >
+          <CallIcon />
+          <span>Call</span>
+        </button>
         <NotificationsIcon />
         <EditLocationRounded />
         <PeopleAltRounded />

@@ -16,6 +16,7 @@
 }
 
 .sidebar__top {
+  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -26,10 +27,13 @@
 }
 
 .sidebar__channels {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  height: 0;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
@@ -322,6 +326,7 @@
 
 .sidebar__voice,
 .sidebar__profile {
+  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -389,6 +394,11 @@
 
   .sidebar__top {
     padding: 16px;
+  }
+
+  .sidebar__channels {
+    height: 0;
+    flex: 1 1 0;
   }
 
   .sidebar__groupItem {

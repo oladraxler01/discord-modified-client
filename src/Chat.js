@@ -471,6 +471,23 @@ const Chat = () => {
 
   const hasDraft = input.trim() !== "" || Boolean(voiceData);
 
+  const startConversationCall = () => {
+    const callWindow = window.open(
+      "https://meet.google.com/new",
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    if (!callWindow) {
+      window.alert("Your browser blocked the call window. Allow popups and try again.");
+      return;
+    }
+
+    window.alert(
+      "A Google Meet room opened. Copy its meeting link and send it in this conversation to invite others.",
+    );
+  };
+
   return (
     <AnimatePresence exitBeforeEnter initial={false}>
       <motion.div
@@ -484,6 +501,7 @@ const Chat = () => {
         <ChatHeader
           channelName={activeRoomName}
           isDirectMessage={isDirectMessage}
+          onStartCall={startConversationCall}
         />
 
         <div className="chat__messages">
