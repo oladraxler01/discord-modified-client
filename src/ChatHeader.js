@@ -14,6 +14,9 @@ const ChatHeader = ({
   onStartCall,
   theme = "light",
   onThemeChange,
+  searchTerm = "",
+  onSearchChange,
+  searchInputRef,
 }) => {
   const themes = [
     { key: "light", label: "Light" },
@@ -61,7 +64,14 @@ const ChatHeader = ({
         </div>
 
         <div className="chatHeader__search">
-          <input type="text" placeholder="Search" />
+          <input
+            ref={searchInputRef}
+            type="search"
+            placeholder="Search messages"
+            value={searchTerm}
+            onChange={(event) => onSearchChange?.(event.target.value)}
+            aria-label="Search messages in this conversation"
+          />
           <SearchRoundedIcon />
         </div>
 

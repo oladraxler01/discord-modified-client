@@ -306,7 +306,7 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
       className={`sidebar ${isOpen ? "sidebar--open" : ""}`}
     >
       <div className="sidebar__top">
-        <h3>Clever Programmer</h3>
+        <h3>VEIL</h3>
         <ExpandMoreIcon />
       </div>
 
@@ -491,7 +491,15 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
         <div className="sidebar__profileIcons">
           <MicIcon />
           <HeadsetIcon />
-          <SettingsIcon />
+          <button
+            className="sidebar__settingsButton"
+            type="button"
+            onClick={() => history.push("/settings")}
+            aria-label="Open settings"
+            title="Settings"
+          >
+            <SettingsIcon />
+          </button>
         </div>
       </div>
     </div>

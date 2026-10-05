@@ -1,14 +1,14 @@
 .message {
   display: flex;
   align-items: flex-start;
-  padding: 20px;
-  color: rgba(248, 248, 255, 0.96);
-  gap: 16px;
+  padding: 16px 20px;
+  color: #111827;
+  gap: 12px;
   transition: background-color 140ms ease;
 }
 
 .message:hover {
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(15, 23, 42, 0.025);
 }
 
 .message__info {
@@ -18,9 +18,33 @@
 }
 
 .message__timestamp {
-  color: rgba(205, 207, 224, 0.56);
-  margin-left: 20px;
-  font-size: x-small;
+  color: #6b7280;
+  margin-left: 10px;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.message__author {
+  display: flex;
+  align-items: baseline;
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.message__content {
+  margin-top: 5px;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.message__content p {
+  margin: 0;
+  color: #111827;
+  white-space: pre-wrap;
 }
 
 .message__gif {
@@ -53,4 +77,14 @@
     display: inline-block;
     margin-left: 8px;
   }
+}
+
+.app[data-theme="midnight"] .message__author,
+.app[data-theme="midnight"] .message__content,
+.app[data-theme="midnight"] .message__content p {
+  color: #f3f4f6;
+}
+
+.app[data-theme="midnight"] .message__timestamp {
+  color: #9ca3af;
 }

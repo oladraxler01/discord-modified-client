@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import Sidebar from "./Sidebar";
 import Chat from "./Chat";
@@ -9,16 +9,24 @@ import Login from "./Login";
 import { auth } from "./firebase";
 import { login, logout } from "./features/userSlice";
 import { Route, Switch } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import SidebarMedia from "./SidebarMedia";
+import Settings from "./Settings";
+import { useTheme } from "./ThemeContext";
 
 function App() {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
+  const location = useLocation();
+  const { currentTheme } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [panicMode, setPanicMode] = useState(false);
-  const [chatTheme, setChatTheme] = useState(() => {
-    if (typeof window === "undefined") return "light";
-    return localStorage.getItem("veil-chat-theme") || "light";
-  });
+  const [activeMessages, setActiveMessages] = useState([]);
+  const chatActions = useRef(null);
+  const registerChatActions = useCallback((actions) => {
+    chatActions.current = actions;
+  }, []);
 
   // Panic Button Listener
   useEffect(() => {
@@ -64,12 +72,6 @@ function App() {
     return unsubscribe;
   }, [dispatch]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("veil-chat-theme", chatTheme);
-    }
-  }, [chatTheme]);
-
   // Instantly unmount the real app and show a fake screen if panicked
   if (panicMode) {
     return (
@@ -106,7 +108,7 @@ function App() {
   }
 
   return (
-    <div className="app" data-theme={chatTheme}>
+    <div className="app" data-theme={currentTheme}>
       {user ? (
         <div className="app-shell">
           <div className="app__mobileBar">
@@ -115,29 +117,45 @@ function App() {
               type="button"
               aria-expanded={isSidebarOpen}
               aria-controls="app-sidebar"
-              onClick={() => setIsSidebarOpen((open) => !open)}
+              onClick={() => {
+                setIsMediaOpen(false);
+                setIsSidebarOpen((open) => !open);
+              }}
             >
               <span aria-hidden="true">☰</span>
               <span>Channels</span>
             </button>
+            <button
+              className={`app__menuButton app__menuButton--media ${isMediaOpen ? "is-active" : ""}`}
+              type="button"
+              aria-expanded={isMediaOpen}
+              aria-controls="shared-media-panel"
+              onClick={() => {
+                setIsSidebarOpen(false);
+                setIsMediaOpen((open) => !open);
+              }}
+            >
+              <span aria-hidden="true">▣</span>
+              <span>Shared files</span>
+            </button>
           </div>
 
           <nav className="app-nav" aria-label="Primary navigation">
-            <button className="app-nav__button is-active" type="button" aria-label="Messages">
+            <Link className={`app-nav__button ${location.pathname === "/" || location.pathname.startsWith("/chat/") || location.pathname.startsWith("/dm/") ? "is-active" : ""}`} to="/" aria-label="Messages" title="Messages">
               ◌
-            </button>
-            <button className="app-nav__button" type="button" aria-label="Search">
+            </Link>
+            <button className="app-nav__button" type="button" aria-label="Search messages" title="Search messages" onClick={() => chatActions.current?.focusSearch()}>
               ⌕
             </button>
-            <button className="app-nav__button" type="button" aria-label="Calls">
+            <button className="app-nav__button" type="button" aria-label="Start call" title="Start call" onClick={() => chatActions.current?.startCall()}>
               ☎
             </button>
-            <button className="app-nav__button" type="button" aria-label="Settings">
+            <Link className={`app-nav__button ${location.pathname === "/settings" ? "is-active" : ""}`} to="/settings" aria-label="Settings" title="Settings">
               ⚙
-            </button>
+            </Link>
           </nav>
 
-          <div className="app-channel-column">
+          <div className={`app-channel-column ${isSidebarOpen ? "is-open" : ""}`}>
             <Sidebar
               isOpen={isSidebarOpen}
               onNavigate={() => setIsSidebarOpen(false)}
@@ -153,96 +171,50 @@ function App() {
                 onClick={() => setIsSidebarOpen(false)}
               />
             )}
+            {isMediaOpen && (
+              <button
+                className="app__mediaBackdrop"
+                type="button"
+                aria-label="Close shared files panel"
+                onClick={() => setIsMediaOpen(false)}
+              />
+            )}
             <Switch>
               <Route path="/invite/:token" component={ChannelInvite} />
+              <Route exact path="/settings" component={Settings} />
               <Route
                 path="/dm/:roomId"
                 render={(props) => (
-                  <Chat {...props} theme={chatTheme} setTheme={setChatTheme} />
+                  <Chat {...props} onMessagesChange={setActiveMessages} onRegisterActions={registerChatActions} />
                 )}
               />
               <Route
                 path="/chat/:roomId"
                 render={(props) => (
-                  <Chat {...props} theme={chatTheme} setTheme={setChatTheme} />
+                  <Chat {...props} onMessagesChange={setActiveMessages} onRegisterActions={registerChatActions} />
                 )}
               />
               <Route
                 exact
                 path="/"
                 render={(props) => (
-                  <Chat {...props} theme={chatTheme} setTheme={setChatTheme} />
+                  <Chat {...props} onMessagesChange={setActiveMessages} onRegisterActions={registerChatActions} />
                 )}
               />
               <Route
                 render={(props) => (
-                  <Chat {...props} theme={chatTheme} setTheme={setChatTheme} />
+                  <Chat {...props} onMessagesChange={setActiveMessages} onRegisterActions={registerChatActions} />
                 )}
               />
             </Switch>
           </div>
-
-          <aside className="app-rail" aria-label="Shared media">
-            <div className="app-rail__panel">
-              <div className="app-rail__header">
-                <span className="app-rail__icon">◫</span>
-                <strong>Videos</strong>
-              </div>
-              <div className="app-rail__grid app-rail__grid--two">
-                <div className="app-rail__mediaCard app-rail__mediaCard--orange">
-                  <span>Presentation Fluid</span>
-                  <small>2A MB</small>
-                </div>
-                <div className="app-rail__mediaCard app-rail__mediaCard--light">
-                  <span>Digital Course</span>
-                  <small>2A MB</small>
-                </div>
-              </div>
-            </div>
-
-            <div className="app-rail__panel">
-              <div className="app-rail__header">
-                <span className="app-rail__icon">◧</span>
-                <strong>Images</strong>
-              </div>
-              <div className="app-rail__imageGrid">
-                <div className="app-rail__image app-rail__image--peach" />
-                <div className="app-rail__image app-rail__image--cyan" />
-                <div className="app-rail__image app-rail__image--violet" />
-                <div className="app-rail__image app-rail__image--mint" />
-              </div>
-            </div>
-
-            <div className="app-rail__panel">
-              <div className="app-rail__header">
-                <span className="app-rail__icon">▣</span>
-                <strong>Files</strong>
-              </div>
-              <div className="app-rail__fileList">
-                <div className="app-rail__fileItem">
-                  <span className="app-rail__fileBadge" />
-                  <div>
-                    <strong>Marketing Documentation.pdf</strong>
-                    <small>1.7 MB</small>
-                  </div>
-                </div>
-                <div className="app-rail__fileItem">
-                  <span className="app-rail__fileBadge app-rail__fileBadge--peach" />
-                  <div>
-                    <strong>How It Affects The Product.pdf</strong>
-                    <small>2.1 MB</small>
-                  </div>
-                </div>
-                <div className="app-rail__fileItem">
-                  <span className="app-rail__fileBadge app-rail__fileBadge--green" />
-                  <div>
-                    <strong>Team Review 2025.pdf</strong>
-                    <small>0.8 MB</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
+          {location.pathname !== "/settings" && (
+            <SidebarMedia
+              messages={activeMessages}
+              isOpen={isMediaOpen}
+              onClose={() => setIsMediaOpen(false)}
+            />
+          )}
         </div>
       ) : (
         <Login />

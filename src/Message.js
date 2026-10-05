@@ -1,7 +1,6 @@
 import { Avatar } from "@material-ui/core";
-import React, { useState, useEffect } from "react";
+import React from "react";
 import "./Message.css";
-import axios from "./axios";
 
 const formatTimestamp = (timestamp) => {
   if (timestamp === undefined || timestamp === null || timestamp === "") {
@@ -19,11 +18,7 @@ const formatTimestamp = (timestamp) => {
     : date.toLocaleString();
 };
 
-const Message = ({ id, timestamp, user, message, voiceData, attachment }) => {
-  const [isViewing, setIsViewing] = useState(false);
-  const [hasBeenViewed, setHasBeenViewed] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(10);
-  const [isDestroyed, setIsDestroyed] = useState(false);
+const Message = ({ timestamp, user, message, voiceData, attachment }) => {
 
   const isGif =
     typeof message === "string" &&
@@ -33,52 +28,18 @@ const Message = ({ id, timestamp, user, message, voiceData, attachment }) => {
     attachment?.type?.startsWith("image/") ||
     /\.(png|jpe?g|gif|webp|svg)$/i.test(attachment?.name || "");
 
-  useEffect(() => {
-    let timer;
-    if (hasBeenViewed && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    } else if (timeLeft === 0 && !isDestroyed) {
-      setIsDestroyed(true);
-      if (id) {
-        axios
-          .delete(`/api/messages/${id}`)
-          .catch((err) => console.error("Failed to delete message:", err));
-      }
-    }
-    return () => clearInterval(timer);
-  }, [hasBeenViewed, timeLeft, id, isDestroyed]);
-
-  const handleReveal = () => {
-    setIsViewing(true);
-    setHasBeenViewed(true);
-  };
-
-  if (isDestroyed) return null;
-
   return (
-    <div className="message relative flex items-start p-5 mb-2 hover:bg-black/20 transition-colors">
+    <div className="message">
       <Avatar src={user?.photo} />
-      <div className="message__info ml-4 flex-1">
-        <h4 className="flex items-center text-white">
-          {user?.displayName}
-          <span className="message__timestamp text-gray-400 text-xs ml-2">
+      <div className="message__info">
+        <h4 className="message__author">
+          <span>{user?.displayName || "Veil user"}</span>
+          <span className="message__timestamp">
             {formatTimestamp(timestamp)}
           </span>
         </h4>
 
-        <div
-          className={`mt-1 transition-all duration-300 select-none cursor-pointer ${
-            !isViewing
-              ? "blur-md opacity-50 bg-white/10 rounded px-2 py-1 inline-block"
-              : "blur-none opacity-100"
-          }`}
-          onMouseDown={handleReveal}
-          onMouseUp={() => setIsViewing(false)}
-          onMouseLeave={() => setIsViewing(false)}
-          onTouchStart={handleReveal}
-          onTouchEnd={() => setIsViewing(false)}
-          onContextMenu={(e) => e.preventDefault()}
-        >
+        <div className="message__content">
           {voiceData ? (
             <div className="message__audioWrap">
               <audio
@@ -121,18 +82,10 @@ const Message = ({ id, timestamp, user, message, voiceData, attachment }) => {
               loading="lazy"
             />
           ) : (
-            <p className={!isViewing ? "text-transparent" : "text-gray-100"}>
-              {message}
-            </p>
+            <p>{message}</p>
           )}
         </div>
       </div>
-
-      {hasBeenViewed && (
-        <div className="absolute right-5 top-5 text-red-500 font-bold text-sm bg-black/40 px-2 py-1 rounded backdrop-blur-md">
-          00:{timeLeft.toString().padStart(2, "0")}
-        </div>
-      )}
     </div>
   );
 };

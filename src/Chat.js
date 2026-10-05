@@ -23,6 +23,7 @@ import { useRouteMatch } from "react-router-dom";
 import usePusherRoom from "./hooks/usePusherRoom";
 import getResponseArray from "./utils/responseArrays";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTheme } from "./ThemeContext";
 
 const popularGifs = [
   {
@@ -51,7 +52,7 @@ const popularGifs = [
   },
 ];
 
-const Chat = ({ theme = "light", setTheme = () => {} }) => {
+const Chat = ({ onMessagesChange, onRegisterActions }) => {
   const dispatch = useDispatch();
   const { roomId } = useParams();
   const isDirectMessage = Boolean(useRouteMatch("/dm/:roomId"));
@@ -65,6 +66,9 @@ const Chat = ({ theme = "light", setTheme = () => {} }) => {
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const searchInputRef = useRef(null);
+  const { currentTheme, setCurrentTheme } = useTheme();
 
   // NEW: State to hold our burn-on-read timer settings
   const [customTimer, setCustomTimer] = useState(0);
@@ -87,6 +91,15 @@ const Chat = ({ theme = "light", setTheme = () => {} }) => {
   const [attachment, setAttachment] = useState(null);
   const [attachmentError, setAttachmentError] = useState("");
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (onMessagesChange) onMessagesChange(messages);
+  }, [messages, onMessagesChange]);
+
+  useEffect(() => {
+    setMessages([]);
+    setSearchTerm("");
+  }, [activeChannelId, isDirectMessage]);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -537,7 +550,7 @@ const Chat = ({ theme = "light", setTheme = () => {} }) => {
   const hasDraft =
     input.trim() !== "" || Boolean(voiceData) || Boolean(attachment);
 
-  const startConversationCall = () => {
+  const startConversationCall = useCallback(() => {
     const callWindow = window.open(
       "https://meet.google.com/new",
       "_blank",
@@ -552,7 +565,28 @@ const Chat = ({ theme = "light", setTheme = () => {} }) => {
     window.alert(
       "A Google Meet room opened. Copy its meeting link and send it in this conversation to invite others.",
     );
-  };
+  }, []);
+
+  const filteredMessages = messages.filter((item) => {
+    const query = searchTerm.trim().toLocaleLowerCase();
+    if (!query) return true;
+    const searchableText = [
+      item.message,
+      item.user?.displayName,
+      item.attachment?.name,
+      item.attachment?.url,
+    ].filter(Boolean).join(" ").toLocaleLowerCase();
+    return searchableText.includes(query);
+  });
+
+  useEffect(() => {
+    if (!onRegisterActions) return undefined;
+    onRegisterActions({
+      startCall: startConversationCall,
+      focusSearch: () => searchInputRef.current?.focus(),
+    });
+    return () => onRegisterActions(null);
+  }, [onRegisterActions, startConversationCall]);
 
   return (
     <AnimatePresence exitBeforeEnter initial={false}>
@@ -568,8 +602,11 @@ const Chat = ({ theme = "light", setTheme = () => {} }) => {
           channelName={activeRoomName}
           isDirectMessage={isDirectMessage}
           onStartCall={startConversationCall}
-          theme={theme}
-          onThemeChange={setTheme}
+          theme={currentTheme}
+          onThemeChange={setCurrentTheme}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchInputRef={searchInputRef}
         />
 
         <div className="chat__messages overflow-y-auto">
@@ -637,7 +674,10 @@ const Chat = ({ theme = "light", setTheme = () => {} }) => {
             </div>
           )}
 
-          {messages?.map((message, index) => (
+          {searchTerm && filteredMessages.length === 0 && (
+            <p className="chat__searchEmpty">No messages match “{searchTerm}”.</p>
+          )}
+          {filteredMessages.map((message, index) => (
             <Message
               key={message._id || index}
               id={message._id}

@@ -1,7 +1,9 @@
 .app {
   --bg: #f5f7fb;
+  --page-bg: #f5f7fb;
   --bg-strong: #eef3fb;
   --panel: #ffffff;
+  --card-bg: #ffffff;
   --panel-muted: #f3f4f6;
   --panel-soft: rgba(255, 255, 255, 0.7);
   --text: #1f2937;
@@ -14,12 +16,58 @@
   --chip: #f2f4f7;
   --chip-strong: #e7ebf3;
   --border: rgba(148, 163, 184, 0.18);
+  --text-color: #1f2937;
+  --muted-color: #64748b;
+  --subtle-bg: #f8fafc;
+  --line-color: rgba(148, 163, 184, 0.18);
 
   display: flex;
   width: 100%;
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--page-bg);
+  color: var(--text-color);
+}
+
+.app[data-theme="violet"] {
+  --bg: #2e1a47;
+  --page-bg: #2e1a47;
+  --bg-strong: #3c245c;
+  --panel: #3c245c;
+  --card-bg: #3c245c;
+  --panel-muted: #493064;
+  --text: #f5edff;
+  --text-color: #f5edff;
+  --muted: #d0bde8;
+  --muted-color: #d0bde8;
+  --soft: #bca4d8;
+  --subtle-bg: #4b3268;
+  --border: rgba(226, 210, 247, 0.16);
+  --line-color: rgba(226, 210, 247, 0.16);
+  --nav-bg: #3c245c;
+  --chip: #4b3268;
+  --chip-strong: #563a74;
+  --shadow: 0 12px 36px rgba(16, 7, 28, 0.22);
+}
+
+.app[data-theme="midnight"] {
+  --bg: #0f172a;
+  --page-bg: #0f172a;
+  --bg-strong: #1e293b;
+  --panel: #1e293b;
+  --card-bg: #1e293b;
+  --panel-muted: #273449;
+  --text: #f1f5f9;
+  --text-color: #f1f5f9;
+  --muted: #cbd5e1;
+  --muted-color: #cbd5e1;
+  --soft: #94a3b8;
+  --subtle-bg: #273449;
+  --border: rgba(203, 213, 225, 0.14);
+  --line-color: rgba(203, 213, 225, 0.14);
+  --nav-bg: #1e293b;
+  --chip: #273449;
+  --chip-strong: #334155;
+  --shadow: 0 12px 36px rgba(2, 6, 23, 0.32);
 }
 
 .app-shell {
@@ -44,6 +92,9 @@
 }
 
 .app-nav__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 42px;
   height: 42px;
   border: 0;
@@ -53,7 +104,144 @@
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
+  text-decoration: none;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
+.app[data-theme="violet"] .app-channel-column,
+.app[data-theme="violet"] .app-chat-column,
+.app[data-theme="violet"] .app-rail__panel,
+.app[data-theme="violet"] .app-nav,
+.app[data-theme="violet"] .sidebar__profile,
+.app[data-theme="violet"] .chatHeader,
+.app[data-theme="violet"] .chat,
+.app[data-theme="violet"] .settings-card {
+  background-color: #3c245c;
+  color: #f5edff;
+}
+
+.app[data-theme="midnight"] .app-channel-column,
+.app[data-theme="midnight"] .app-chat-column,
+.app[data-theme="midnight"] .app-rail__panel,
+.app[data-theme="midnight"] .app-nav,
+.app[data-theme="midnight"] .sidebar__profile,
+.app[data-theme="midnight"] .chatHeader,
+.app[data-theme="midnight"] .chat,
+.app[data-theme="midnight"] .settings-card {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+.app[data-theme="violet"] .chat__messages,
+.app[data-theme="violet"] .settings-page {
+  background: #2e1a47;
+}
+
+.app[data-theme="midnight"] .chat__messages,
+.app[data-theme="midnight"] .settings-page {
+  background: #0f172a;
+}
+
+.app[data-theme="violet"] .sidebar__top,
+.app[data-theme="violet"] .sidebar__top h3,
+.app[data-theme="violet"] .sidebar__header,
+.app[data-theme="violet"] .sidebar__channelsHeader,
+.app[data-theme="violet"] .sidebar__groupsHeader,
+.app[data-theme="violet"] .sidebar__dmsHeader,
+.app[data-theme="violet"] .sidebar__profileInfo h3,
+.app[data-theme="violet"] .chatHeader__left > h3,
+.app[data-theme="violet"] .chatHeader__right > .MuiSvgIcon-root,
+.app[data-theme="violet"] .app-rail__header,
+.app[data-theme="violet"] .settings-card__identity h2,
+.app[data-theme="violet"] .settings-card__details dd {
+  color: #f5edff;
+}
+
+.app[data-theme="midnight"] .sidebar__top,
+.app[data-theme="midnight"] .sidebar__top h3,
+.app[data-theme="midnight"] .sidebar__header,
+.app[data-theme="midnight"] .sidebar__channelsHeader,
+.app[data-theme="midnight"] .sidebar__groupsHeader,
+.app[data-theme="midnight"] .sidebar__dmsHeader,
+.app[data-theme="midnight"] .sidebar__profileInfo h3,
+.app[data-theme="midnight"] .chatHeader__left > h3,
+.app[data-theme="midnight"] .chatHeader__right > .MuiSvgIcon-root,
+.app[data-theme="midnight"] .app-rail__header,
+.app[data-theme="midnight"] .settings-card__identity h2,
+.app[data-theme="midnight"] .settings-card__details dd {
+  color: #f1f5f9;
+}
+
+.app[data-theme="violet"] .sidebar__dmLink,
+.app[data-theme="violet"] .sidebar__friendRow,
+.app[data-theme="violet"] .sidebar__groupInfo strong,
+.app[data-theme="violet"] .app-rail__fileDetails strong,
+.app[data-theme="violet"] .app-rail__mediaCard,
+.app[data-theme="violet"] .message__content p,
+.app[data-theme="violet"] .message__author {
+  color: #f5edff;
+}
+
+.app[data-theme="midnight"] .sidebar__dmLink,
+.app[data-theme="midnight"] .sidebar__friendRow,
+.app[data-theme="midnight"] .sidebar__groupInfo strong,
+.app[data-theme="midnight"] .app-rail__fileDetails strong,
+.app[data-theme="midnight"] .app-rail__mediaCard,
+.app[data-theme="midnight"] .message__content p,
+.app[data-theme="midnight"] .message__author {
+  color: #f1f5f9;
+}
+
+.app[data-theme="violet"] .sidebar__dmLink:hover,
+.app[data-theme="violet"] .sidebar__friendRow:hover,
+.app[data-theme="violet"] .sidebar__groupItem,
+.app[data-theme="violet"] .app-rail__fileItem,
+.app[data-theme="violet"] .chat__input,
+.app[data-theme="violet"] .chat__search,
+.app[data-theme="violet"] .chatHeader__search,
+.app[data-theme="violet"] .chatHeader__themeSwitcher {
+  background: #4b3268;
+}
+
+.app[data-theme="midnight"] .sidebar__dmLink:hover,
+.app[data-theme="midnight"] .sidebar__friendRow:hover,
+.app[data-theme="midnight"] .sidebar__groupItem,
+.app[data-theme="midnight"] .app-rail__fileItem,
+.app[data-theme="midnight"] .chat__input,
+.app[data-theme="midnight"] .chatHeader__search,
+.app[data-theme="midnight"] .chatHeader__themeSwitcher {
+  background: #273449;
+}
+
+.app[data-theme="violet"] .chatHeader__search > input,
+.app[data-theme="violet"] .chat__form input[type="text"],
+.app[data-theme="midnight"] .chatHeader__search > input,
+.app[data-theme="midnight"] .chat__form input[type="text"] {
+  color: #f1f5f9;
+}
+
+.app[data-theme="violet"] .message__timestamp,
+.app[data-theme="midnight"] .message__timestamp,
+.app[data-theme="violet"] .sidebar__profileInfo p,
+.app[data-theme="midnight"] .sidebar__profileInfo p,
+.app[data-theme="violet"] .settings-card__details dt,
+.app[data-theme="midnight"] .settings-card__details dt {
+  color: #cbd5e1;
+}
+
+.app[data-theme="violet"] .settings-card .MuiInputBase-input,
+.app[data-theme="midnight"] .settings-card .MuiInputBase-input {
+  color: #f1f5f9;
+}
+
+.app[data-theme="violet"] .settings-card .MuiInputLabel-outlined,
+.app[data-theme="midnight"] .settings-card .MuiInputLabel-outlined {
+  color: #cbd5e1;
+}
+
+.app[data-theme="violet"] .settings-card .MuiOutlinedInput-notchedOutline,
+.app[data-theme="midnight"] .settings-card .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(203, 213, 225, 0.35);
 }
 
 .app-nav__button.is-active {
@@ -260,7 +448,7 @@
     grid-template-columns: 68px 260px minmax(0, 1fr);
   }
 
-  .app-rail {
+  .app .app-rail {
     display: none;
   }
 }
@@ -269,8 +457,13 @@
   .app-shell {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+    gap: 10px;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
   }
 
   .app-nav {
@@ -278,30 +471,118 @@
   }
 
   .app-channel-column {
-    display: none;
+    position: fixed;
+    z-index: 40;
+    top: calc(env(safe-area-inset-top) + 72px);
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: 8px;
+    display: block;
+    width: min(86vw, 330px);
+    border-radius: 22px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.24);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(calc(-100% - 16px));
+    transition: transform 180ms ease, opacity 180ms ease, visibility 180ms ease;
+  }
+
+  .app-channel-column.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(0);
   }
 
   .app-chat-column {
     flex: 1;
+    display: flex;
+    width: 100%;
+    height: 0;
     min-height: 0;
+    overflow: visible;
+  }
+
+  .app-chat-column .chat {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-radius: 20px;
   }
 
   .app__mobileBar {
+    position: relative;
+    z-index: 15;
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     min-height: 52px;
-    padding: 0 10px;
+    padding: 0 8px;
     background: rgba(255, 255, 255, 0.84);
     border-radius: 18px;
     box-shadow: var(--shadow);
   }
 
-  .app__backdrop {
+  .app__menuButton {
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: 13px;
+    background: #252b37;
+  }
+
+  .app__menuButton--media {
+    margin-left: auto;
+    background: #eef1f6;
+    color: #374151;
+    border-color: transparent;
+  }
+
+  .app .app-rail {
+    position: fixed;
+    z-index: 40;
+    top: calc(env(safe-area-inset-top) + 72px);
+    right: 8px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    display: flex;
+    width: min(88vw, 360px);
+    padding: 10px;
+    overflow-y: auto;
+    border-radius: 22px;
+    background: var(--page-bg);
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.24);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(calc(100% + 16px));
+    transition: transform 180ms ease, opacity 180ms ease, visibility 180ms ease;
+  }
+
+  .app-rail.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .app__backdrop,
+  .app__mediaBackdrop {
     position: fixed;
     inset: 0;
     display: block;
     border: 0;
     background: rgba(17, 24, 39, 0.2);
-    z-index: 20;
+    z-index: 35;
+  }
+}
+
+@media (max-width: 820px) {
+  .app[data-theme="violet"] .app__mobileBar,
+  .app[data-theme="violet"] .app-channel-column .sidebar,
+  .app[data-theme="violet"] .app-rail {
+    background: #3c245c;
+  }
+
+  .app[data-theme="midnight"] .app__mobileBar,
+  .app[data-theme="midnight"] .app-channel-column .sidebar,
+  .app[data-theme="midnight"] .app-rail {
+    background: #1e293b;
   }
 }

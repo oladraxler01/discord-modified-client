@@ -136,3 +136,56 @@
     min-width: 100px;
   }
 }
+
+@media (max-width: 600px) {
+  .chatHeader {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 12px 14px 10px;
+  }
+
+  .chatHeader__left {
+    justify-content: flex-start;
+  }
+
+  .chatHeader__left > h3 {
+    justify-content: flex-start;
+    font-size: 17px;
+  }
+
+  .chatHeader__hash {
+    font-size: 22px;
+  }
+
+  .chatHeader__right {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+
+  .chatHeader__right > .MuiSvgIcon-root {
+    display: none;
+  }
+
+  .chatHeader__callButton {
+    grid-column: 1;
+    min-height: 38px;
+  }
+
+  .chatHeader__themeSwitcher {
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+  }
+
+  .chatHeader__search {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

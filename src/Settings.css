@@ -1,0 +1,18 @@
+.settings-page { height: 100%; overflow: auto; padding: clamp(22px,5vw,56px); box-sizing: border-box; background: var(--page-bg,#f5f7fb); color: var(--text-color,#111827); }
+.settings-page__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 760px; margin: 0 auto 24px; }
+.settings-page__header p { margin: 0 0 6px; color: #ff795d; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.settings-page__header h1 { margin: 0; font-size: 30px; }
+.settings-page__back { color: #4f46e5; text-decoration: none; font-weight: 700; }
+.settings-card { max-width: 760px; margin: 0 auto; padding: clamp(20px,4vw,34px); border-radius: 24px; background: var(--card-bg,#fff); box-shadow: 0 12px 40px rgba(15,23,42,.06); }
+.settings-card__identity { display: flex; align-items: center; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid var(--line-color,rgba(148,163,184,.2)); }
+.settings-card__avatar { width: 64px !important; height: 64px !important; font-size: 24px !important; }
+.settings-card__identity h2 { margin: 0 0 4px; font-size: 20px; }
+.settings-card__identity p { margin: 0; color: var(--muted-color,#64748b); }
+.settings-card__form { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 12px; padding: 24px 0; }
+.settings-card__form .MuiButton-root { height: 56px; padding: 0 20px; }
+.settings-card__status { grid-column: 1 / -1; margin: 0; color: #15803d; font-size: 13px; }
+.settings-card__details { margin: 0; border-top: 1px solid var(--line-color,rgba(148,163,184,.2)); }
+.settings-card__details div { display: grid; grid-template-columns: minmax(140px, .7fr) 1.5fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line-color,rgba(148,163,184,.12)); }
+.settings-card__details dt { color: var(--muted-color,#64748b); font-size: 13px; }
+.settings-card__details dd { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: 13px; }
+@media(max-width:560px) { .settings-card__form { grid-template-columns: 1fr; } .settings-card__details div { grid-template-columns: 1fr; gap: 5px; } }
