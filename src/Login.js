@@ -66,49 +66,61 @@ const Login = () => {
   return (
     <div className="login">
       <div className="login__shell">
-        <div className="login__brand">
-          <img src="/veil-brand.svg" alt="Veil brand logo" />
-          <div className="login__wordmark">
-            <span>Veil</span>
-            <small>Private circles, shared moments</small>
+        <div className="login__left">
+          <div className="login__brand">
+            <div className="login__mark">V</div>
+            <div className="login__wordmark">
+              <span>Veil</span>
+            </div>
           </div>
-        </div>
 
-        <div className="login__card">
-          <p className="login__eyebrow">Welcome back</p>
-          <h1>Secure your conversations.</h1>
-          <p className="login__subtext">
-            Jump into communities, direct messages, voice notes, and shared
-            files in a calmer, more polished space.
-          </p>
-
-          <Button
-            className="login__button"
-            onClick={signIn}
-            disabled={isSigningIn}
-          >
-            {isSigningIn ? "Connecting…" : "Continue with Google"}
-          </Button>
-
-          {error && (
-            <p className="login__error" role="alert">
-              {error}
+          <div className="login__welcome">
+            <p className="login__eyebrow">Welcome back</p>
+            <h1>Secure your conversations.</h1>
+            <p className="login__subtext">
+              Jump into communities, direct messages, voice notes, and shared
+              files in a cleaner, calmer workspace.
             </p>
-          )}
+          </div>
+
+          <div className="login__actions">
+            <Button
+              className="login__button"
+              onClick={signIn}
+              disabled={isSigningIn}
+            >
+              {isSigningIn ? "Connecting…" : "Continue with Google"}
+            </Button>
+
+            {error && (
+              <p className="login__error" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
+
+          <div className="login__meta" aria-label="Veil features">
+            <div>
+              <span>Private</span>
+              <strong>DMs</strong>
+            </div>
+            <div>
+              <span>Shared</span>
+              <strong>Files</strong>
+            </div>
+            <div>
+              <span>Live</span>
+              <strong>Rooms</strong>
+            </div>
+          </div>
         </div>
 
-        <div className="login__meta" aria-label="Veil features">
-          <div>
-            <span>Private</span>
-            <strong>DMs</strong>
-          </div>
-          <div>
-            <span>Shared</span>
-            <strong>Files</strong>
-          </div>
-          <div>
-            <span>Live</span>
-            <strong>Rooms</strong>
+        <div className="login__visual" aria-label="Veil preview card">
+          <div className="login__visualCard">
+            <div className="login__visualGlow" />
+            <div className="login__visualContent">
+              <span>Browse thousands of properties</span>
+            </div>
           </div>
         </div>
       </div>

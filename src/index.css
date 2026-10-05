@@ -44,8 +44,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  background: #100e18;
-  color: #f4f4fb;
+  background: #f3f5fb;
+  color: #111827;
 }
 
 #root {

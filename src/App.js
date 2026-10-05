@@ -15,6 +15,10 @@ function App() {
   const user = useSelector(selectUser);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [panicMode, setPanicMode] = useState(false);
+  const [chatTheme, setChatTheme] = useState(() => {
+    if (typeof window === "undefined") return "light";
+    return localStorage.getItem("veil-chat-theme") || "light";
+  });
 
   // Panic Button Listener
   useEffect(() => {
@@ -60,6 +64,12 @@ function App() {
     return unsubscribe;
   }, [dispatch]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("veil-chat-theme", chatTheme);
+    }
+  }, [chatTheme]);
+
   // Instantly unmount the real app and show a fake screen if panicked
   if (panicMode) {
     return (
@@ -96,7 +106,7 @@ function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" data-theme={chatTheme}>
       {user ? (
         <>
           <div className="app__mobileBar">
@@ -126,10 +136,30 @@ function App() {
             )}
             <Switch>
               <Route path="/invite/:token" component={ChannelInvite} />
-              <Route path="/dm/:roomId" component={Chat} />
-              <Route path="/chat/:roomId" component={Chat} />
-              <Route exact path="/" component={Chat} />
-              <Route component={Chat} />
+              <Route
+                path="/dm/:roomId"
+                render={(props) => (
+                  <Chat {...props} theme={chatTheme} setTheme={setChatTheme} />
+                )}
+              />
+              <Route
+                path="/chat/:roomId"
+                render={(props) => (
+                  <Chat {...props} theme={chatTheme} setTheme={setChatTheme} />
+                )}
+              />
+              <Route
+                exact
+                path="/"
+                render={(props) => (
+                  <Chat {...props} theme={chatTheme} setTheme={setChatTheme} />
+                )}
+              />
+              <Route
+                render={(props) => (
+                  <Chat {...props} theme={chatTheme} setTheme={setChatTheme} />
+                )}
+              />
             </Switch>
           </div>
         </>

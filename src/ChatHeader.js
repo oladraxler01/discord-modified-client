@@ -8,7 +8,19 @@ import SendRoundedIcon from "@material-ui/icons/SendRounded";
 import HelpRoundedIcon from "@material-ui/icons/HelpRounded";
 import CallIcon from "@material-ui/icons/Call";
 
-const ChatHeader = ({ channelName, isDirectMessage = false, onStartCall }) => {
+const ChatHeader = ({
+  channelName,
+  isDirectMessage = false,
+  onStartCall,
+  theme = "light",
+  onThemeChange,
+}) => {
+  const themes = [
+    { key: "light", label: "Light" },
+    { key: "violet", label: "Violet" },
+    { key: "midnight", label: "Midnight" },
+  ];
+
   return (
     <div className="chatHeader">
       <div className="chatHeader__left">
@@ -34,6 +46,19 @@ const ChatHeader = ({ channelName, isDirectMessage = false, onStartCall }) => {
         <NotificationsIcon />
         <EditLocationRounded />
         <PeopleAltRounded />
+
+        <div className="chatHeader__themeSwitcher" aria-label="Theme selector">
+          {themes.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={theme === item.key ? "is-active" : ""}
+              onClick={() => onThemeChange?.(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
 
         <div className="chatHeader__search">
           <input type="text" placeholder="Search" />

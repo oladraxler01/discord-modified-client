@@ -6,25 +6,25 @@
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  background: rgba(10, 11, 19, 0.16);
+  background: var(--chat-bg);
+  border-left: 1px solid var(--chat-border);
   height: 100%;
   overflow: hidden;
 }
 
 .chat__input {
-  color: lightgray;
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px;
-  border-radius: 5px;
-  margin: 20px;
-  border-top: 1px solid gray;
-  background: rgba(8, 9, 17, 0.38);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(22px) saturate(135%);
-  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  padding: 12px 14px;
+  border-radius: 20px;
+  margin: 18px 18px 20px;
+  background: var(--panel);
+  border: 1px solid var(--chat-border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   gap: 12px;
   flex-wrap: wrap;
 }

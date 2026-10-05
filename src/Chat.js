@@ -51,7 +51,7 @@ const popularGifs = [
   },
 ];
 
-const Chat = () => {
+const Chat = ({ theme = "light", setTheme = () => {} }) => {
   const dispatch = useDispatch();
   const { roomId } = useParams();
   const isDirectMessage = Boolean(useRouteMatch("/dm/:roomId"));
@@ -568,6 +568,8 @@ const Chat = () => {
           channelName={activeRoomName}
           isDirectMessage={isDirectMessage}
           onStartCall={startConversationCall}
+          theme={theme}
+          onThemeChange={setTheme}
         />
 
         <div className="chat__messages overflow-y-auto">
