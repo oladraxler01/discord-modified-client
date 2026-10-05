@@ -62,8 +62,18 @@ const Chat = () => {
   const activeRoomName = isDirectMessage
     ? channelName || "Direct message"
     : channelName;
+
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
+
+  // NEW: State to hold our burn-on-read timer settings
+  const [customTimer, setCustomTimer] = useState(0);
+  const [ephemeralSettings, setEphemeralSettings] = useState({
+    active: false,
+    durationInSeconds: 0,
+    agreedByUids: [],
+  });
+
   const [roomError, setRoomError] = useState("");
   const [isInviteOnly, setIsInviteOnly] = useState(false);
   const [roomAccessChecked, setRoomAccessChecked] = useState(false);
@@ -74,6 +84,7 @@ const Chat = () => {
   const [recordingError, setRecordingError] = useState("");
   const [voiceData, setVoiceData] = useState("");
   const [audioLevels, setAudioLevels] = useState(Array(18).fill(12));
+
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioContextRef = useRef(null);
@@ -88,17 +99,14 @@ const Chat = () => {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-
     if (sourceNodeRef.current) {
       sourceNodeRef.current.disconnect();
       sourceNodeRef.current = null;
     }
-
     if (analyserRef.current) {
       analyserRef.current.disconnect();
       analyserRef.current = null;
     }
-
     if (audioContextRef.current) {
       audioContextRef.current.close();
       audioContextRef.current = null;
@@ -107,10 +115,7 @@ const Chat = () => {
 
   const startAudioMonitoring = async (stream) => {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-
-    if (!AudioContextClass) {
-      return;
-    }
+    if (!AudioContextClass) return;
 
     const audioContext = new AudioContextClass();
     const analyser = audioContext.createAnalyser();
@@ -118,7 +123,6 @@ const Chat = () => {
 
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.82;
-
     source.connect(analyser);
 
     audioContextRef.current = audioContext;
@@ -147,7 +151,6 @@ const Chat = () => {
         const average =
           slice.reduce((total, value) => total + value, 0) /
           (slice.length || 1);
-
         return Math.min(100, Math.max(12, (average / 255) * 100));
       });
 
@@ -207,7 +210,6 @@ const Chat = () => {
       .get("/get/channelList")
       .then((response) => {
         if (!isCurrentRoom) return;
-
         const rooms = getResponseArray(response.data, "channels");
         const room = rooms.find((item) => item.id === roomId);
         if (room) {
@@ -252,12 +254,29 @@ const Chat = () => {
       .then((response) => {
         if (isDirectMessage) {
           setMessages(getResponseArray(response.data?.conversation));
+          // NEW: Grab DM timer settings
+          setEphemeralSettings(
+            response.data?.ephemeralSettings || {
+              active: false,
+              durationInSeconds: 0,
+              agreedByUids: [],
+            },
+          );
           setRoomError("");
           return;
         }
 
         const conversations = getResponseArray(response.data, "conversations");
-        setMessages(getResponseArray(conversations[0]?.conversation));
+        const currentChannel = conversations[0] || {};
+        setMessages(getResponseArray(currentChannel.conversation));
+        // NEW: Grab Channel timer settings
+        setEphemeralSettings(
+          currentChannel.ephemeralSettings || {
+            active: false,
+            durationInSeconds: 0,
+            agreedByUids: [],
+          },
+        );
         setRoomError("");
       })
       .catch((error) => {
@@ -295,17 +314,39 @@ const Chat = () => {
     };
   }, []);
 
-  // 3. CHANGED: Send message to your MongoDB backend
+  // NEW: API Handlers for the Timer Handshake
+  const handleProposeTimer = async (seconds) => {
+    if (!activeChannelId) return;
+    try {
+      await axios.post(`/api/channels/${activeChannelId}/timer`, {
+        uid: user.uid,
+        durationInSeconds: seconds,
+      });
+      getConversation();
+    } catch (err) {
+      console.error("Failed to propose timer:", err);
+    }
+  };
+
+  const handleAcceptTimer = async () => {
+    if (!activeChannelId) return;
+    try {
+      await axios.post(`/api/channels/${activeChannelId}/timer`, {
+        uid: user.uid,
+        durationInSeconds: ephemeralSettings.durationInSeconds,
+      });
+      getConversation();
+    } catch (err) {
+      console.error("Failed to accept timer:", err);
+    }
+  };
+
   const sendMessage = (e) => {
     e.preventDefault();
-
     if (!activeChannelId) return;
 
     const messageText = input.trim() || (voiceData ? "🎤 Voice note" : "");
-
-    if (!messageText) {
-      return;
-    }
+    if (!messageText) return;
 
     const payload = {
       message: messageText,
@@ -333,7 +374,6 @@ const Chat = () => {
 
   const startRecording = async () => {
     if (!activeChannelId) return;
-
     setRecordingError("");
 
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -349,7 +389,6 @@ const Chat = () => {
     }
 
     let stream;
-
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -394,9 +433,7 @@ const Chat = () => {
       };
 
       recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
 
       recorder.onstop = () => {
@@ -417,14 +454,12 @@ const Chat = () => {
         }
 
         const reader = new FileReader();
-
         reader.onloadend = () => {
           setVoiceData(reader.result);
           setIsRecording(false);
           setAudioLevels(Array(18).fill(12));
           stopAudioMonitoring();
         };
-
         reader.onerror = () => {
           setIsRecording(false);
           setRecordingError(
@@ -432,29 +467,21 @@ const Chat = () => {
           );
           stopAudioMonitoring();
         };
-
         reader.readAsDataURL(audioBlob);
       };
 
       recorder.start();
-      startAudioMonitoring(stream).catch((error) => {
-        console.warn("Live microphone meter is unavailable:", error);
-      });
+      startAudioMonitoring(stream).catch((error) =>
+        console.warn("Live microphone meter is unavailable:", error),
+      );
     } catch (error) {
       console.error("Microphone access failed:", error);
       isRecordingRef.current = false;
       setIsRecording(false);
       setRecordingError(
-        error.name === "NotAllowedError" ||
-          error.name === "PermissionDeniedError"
-          ? "Microphone permission is blocked. Allow microphone access in your browser settings, then retry."
-          : error.name === "NotFoundError"
-            ? "No microphone was found on this device."
-            : "Could not start recording. Check microphone access and try again.",
+        "Could not start recording. Check microphone access and try again.",
       );
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
+      if (stream) stream.getTracks().forEach((track) => track.stop());
       micStreamRef.current = null;
       stopAudioMonitoring();
     }
@@ -477,12 +504,12 @@ const Chat = () => {
       "_blank",
       "noopener,noreferrer",
     );
-
     if (!callWindow) {
-      window.alert("Your browser blocked the call window. Allow popups and try again.");
+      window.alert(
+        "Your browser blocked the call window. Allow popups and try again.",
+      );
       return;
     }
-
     window.alert(
       "A Google Meet room opened. Copy its meeting link and send it in this conversation to invite others.",
     );
@@ -504,15 +531,73 @@ const Chat = () => {
           onStartCall={startConversationCall}
         />
 
-        <div className="chat__messages">
+        <div className="chat__messages overflow-y-auto">
           {roomError && (
             <div className="chat__roomError" role="alert">
               {roomError}
             </div>
           )}
+
+          {/* NEW: The Handshake Banner for Pending and Active Timers */}
+          {ephemeralSettings?.durationInSeconds > 0 &&
+            !ephemeralSettings?.active && (
+              <div
+                style={{
+                  backgroundColor: "rgba(180, 83, 9, 0.2)",
+                  border: "1px solid #d97706",
+                  color: "#fcd34d",
+                  padding: "12px",
+                  margin: "16px",
+                  borderRadius: "6px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontSize: "0.875rem" }}>
+                  A {ephemeralSettings.durationInSeconds}s burn timer was
+                  proposed. Waiting for members to accept.
+                </span>
+                {!ephemeralSettings.agreedByUids?.includes(user.uid) && (
+                  <button
+                    onClick={handleAcceptTimer}
+                    style={{
+                      backgroundColor: "#f59e0b",
+                      color: "#000",
+                      padding: "4px 12px",
+                      borderRadius: "4px",
+                      fontWeight: "bold",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Accept
+                  </button>
+                )}
+              </div>
+            )}
+
+          {ephemeralSettings?.active && (
+            <div
+              style={{
+                backgroundColor: "rgba(220, 38, 38, 0.2)",
+                border: "1px solid #ef4444",
+                color: "#f87171",
+                padding: "8px",
+                margin: "16px",
+                borderRadius: "6px",
+                textAlign: "center",
+                fontSize: "0.875rem",
+                fontWeight: "bold",
+              }}
+            >
+              🔥 Burn-on-Read active ({ephemeralSettings.durationInSeconds}s)
+            </div>
+          )}
+
           {messages?.map((message, index) => (
             <Message
-              key={index}
+              key={message._id || index}
               id={message._id}
               message={message.message}
               timestamp={message.timestamp}
@@ -549,6 +634,7 @@ const Chat = () => {
               {recordingError}
             </p>
           )}
+
           <form onSubmit={sendMessage} className="chat__form">
             <input
               type="text"
@@ -561,6 +647,67 @@ const Chat = () => {
                   : `Message #${activeRoomName || "channel"}`
               }
             />
+
+            {/* NEW: Timer Controls built directly into the text bar */}
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                marginLeft: "12px",
+                marginRight: "12px",
+              }}
+            >
+              <input
+                type="number"
+                placeholder="Secs"
+                style={{
+                  backgroundColor: "#40444b",
+                  color: "white",
+                  padding: "8px",
+                  borderRadius: "4px",
+                  width: "60px",
+                  outline: "none",
+                  border: "none",
+                }}
+                onChange={(e) => setCustomTimer(Number(e.target.value))}
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleProposeTimer(customTimer);
+                }}
+                style={{
+                  color: "#9ca3af",
+                  backgroundColor: "#2f3136",
+                  padding: "8px 12px",
+                  borderRadius: "4px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                }}
+              >
+                Set
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleProposeTimer(0);
+                }}
+                style={{
+                  color: "#f87171",
+                  backgroundColor: "#2f3136",
+                  padding: "8px 12px",
+                  borderRadius: "4px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                }}
+              >
+                Off
+              </button>
+            </div>
 
             <button
               className={`chat__voiceButton ${isRecording ? "is-recording" : ""}`}
@@ -592,7 +739,6 @@ const Chat = () => {
             <button
               className={`chat__pickerButton ${picker === "gif" ? "is-active" : ""}`}
               type="button"
-              aria-label="Choose a GIF"
               aria-expanded={picker === "gif"}
               onClick={() => setPicker(picker === "gif" ? null : "gif")}
             >
@@ -601,7 +747,6 @@ const Chat = () => {
             <button
               className={`chat__pickerButton ${picker === "emoji" ? "is-active" : ""}`}
               type="button"
-              aria-label="Choose an emoji"
               aria-expanded={picker === "emoji"}
               onClick={() => setPicker(picker === "emoji" ? null : "emoji")}
             >
@@ -609,6 +754,7 @@ const Chat = () => {
             </button>
           </div>
         </div>
+
         {picker === "emoji" && (
           <div className="chat__picker chat__emojiPicker">
             <EmojiPicker
@@ -623,6 +769,7 @@ const Chat = () => {
             />
           </div>
         )}
+
         {picker === "gif" && (
           <div className="chat__picker chat__gifPicker">
             <div className="chat__gifHeading">
@@ -643,14 +790,13 @@ const Chat = () => {
               value={gifSearch}
               onChange={(event) => setGifSearch(event.target.value)}
               placeholder="Filter popular GIFs..."
-              aria-label="Filter GIFs"
             />
             <div className="chat__gifGrid">
               {popularGifs
                 .filter((gif) =>
                   gif.label.toLowerCase().includes(gifSearch.toLowerCase()),
                 )
-                ?.map((gif) => (
+                .map((gif) => (
                   <button
                     className="chat__gifCard"
                     key={gif.label}
@@ -659,19 +805,11 @@ const Chat = () => {
                       setInput(gif.url);
                       setPicker(null);
                     }}
-                    aria-label={`Add ${gif.label} GIF`}
                   >
                     <img src={gif.url} alt={gif.label} loading="lazy" />
                     <span>{gif.label}</span>
                   </button>
                 ))}
-              {popularGifs.filter((gif) =>
-                gif.label.toLowerCase().includes(gifSearch.toLowerCase()),
-              ).length === 0 && (
-                <p className="chat__gifEmpty">
-                  No featured GIFs match that filter.
-                </p>
-              )}
             </div>
           </div>
         )}

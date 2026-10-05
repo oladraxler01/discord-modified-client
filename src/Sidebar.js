@@ -10,7 +10,7 @@ import HeadsetIcon from "@material-ui/icons/Headset";
 import SettingsIcon from "@material-ui/icons/Settings";
 import { useSelector } from "react-redux";
 import { selectUser } from "./features/userSlice";
-import { auth } from "./firebase"; // Removed 'db' since we use Mongo now
+import { auth } from "./firebase";
 import axios from "./axios";
 import Pusher from "pusher-js";
 import getResponseArray from "./utils/responseArrays";
@@ -178,7 +178,6 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
       });
   };
 
-  // FIXED: Now sends data to your Node/Mongo backend instead of Firebase
   const handleAddChannel = (e) => {
     e.preventDefault();
     const channelName = prompt("Enter a new channel name");
@@ -290,7 +289,9 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
     );
 
     if (!callWindow) {
-      window.alert("Your browser blocked the call window. Allow popups and try again.");
+      window.alert(
+        "Your browser blocked the call window. Allow popups and try again.",
+      );
       return;
     }
 
@@ -309,7 +310,8 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
         <ExpandMoreIcon />
       </div>
 
-      <div className="sidebar__channels">
+      {/* Added flex-1 and overflow-y-auto to enable seamless vertical scrolling */}
+      <div className="sidebar__channels flex-1 overflow-y-auto custom-scrollbar">
         <div className="sidebar__channelsHeader">
           <div className="sidebar__header">
             <ExpandMoreIcon />
@@ -330,7 +332,6 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
           </div>
         </div>
         <div className="sidebar__channelsList">
-          {/* FIXED: Mapped to match your backend's { id, name } structure */}
           {channels?.map(({ id, name, isPrivate, isOwner }) => (
             <SidebarChannel
               key={id}

@@ -58,7 +58,9 @@
   background: rgba(57, 177, 124, 0.13);
   color: #a9f0ce;
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
 }
 
 .chatHeader__callButton:hover {
