@@ -36,28 +36,28 @@ npm run dev
 
 Copy `discord-backend/.env.example` to `discord-backend/.env`. For Render, set these in the service environment dashboard instead of deploying a `.env` file.
 
-| Environment variable | Purpose |
-| --- | --- |
-| `PORT` | API HTTP port; defaults to 8002. |
-| `MONGO_URI` | MongoDB connection string; required for data routes. |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Admin service-account JSON for the same project; secret. |
-| `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER` | Pusher server configuration; keep secret private. |
-| `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit server token signing; keep secret private. |
-| `CHANNEL_MIGRATION_OWNER_UID` | Temporary UID allowed to migrate old channels; remove after migration. |
+| Environment variable                                             | Purpose                                                                |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `PORT`                                                           | API HTTP port; defaults to 8002.                                       |
+| `MONGO_URI`                                                      | MongoDB connection string; required for data routes.                   |
+| `FIREBASE_SERVICE_ACCOUNT_JSON`                                  | Firebase Admin service-account JSON for the same project; secret.      |
+| `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER` | Pusher server configuration; keep secret private.                      |
+| `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`                          | LiveKit server token signing; keep secret private.                     |
+| `CHANNEL_MIGRATION_OWNER_UID`                                    | Temporary UID allowed to migrate old channels; remove after migration. |
 
 The backend loads local `.env` values with dotenv. Hosting providers should use environment settings.
 
 ## Browser routes
 
-| Route | Purpose |
-| --- | --- |
-| `/` | Signed-in app home. |
-| `/chat/:roomId` | Channel conversation; API checks access. |
-| `/dm/:roomId` | Participant-only direct message. |
-| `/invite/:token` | Preview/accept a seven-day invite to one channel. |
-| `/join/:inviteCode` | Preview/accept a specific group invitation. |
-| `/groups/:groupId` | Member-only group directory and invite actions. |
-| `/settings` | View/edit Firebase profile display name. |
+| Route               | Purpose                                           |
+| ------------------- | ------------------------------------------------- |
+| `/`                 | Signed-in app home.                               |
+| `/chat/:roomId`     | Channel conversation; API checks access.          |
+| `/dm/:roomId`       | Participant-only direct message.                  |
+| `/invite/:token`    | Preview/accept a seven-day invite to one channel. |
+| `/join/:inviteCode` | Preview/accept a specific group invitation.       |
+| `/groups/:groupId`  | Member-only group directory and invite actions.   |
+| `/settings`         | View/edit Firebase profile display name.          |
 
 Static hosting must rewrite these deep paths to `index.html`.
 
@@ -99,44 +99,44 @@ Except the health route and channel invite preview, routes require `Authorizatio
 
 ### Channels
 
-| Method / path | Purpose / access |
-| --- | --- |
-| `GET /` | Public health response. |
-| `POST /new/channel` | Create private channel owned by caller; body `{ "channelName": "..." }`. |
-| `GET /get/channelList` | Explicit public and caller-owned/member channels only. |
-| `GET /get/data` | Caller-accessible channel data only. |
-| `GET /get/conversation?id=:channelId` | Read accessible channel conversation. |
-| `POST /new/message?id=:channelId` | Send text/voice/attachment to accessible channel. |
-| `POST /channels/:id/invites` | Owner-only, seven-day channel invite. |
-| `GET /channel-invites/:token` | Public invite preview; does not join. |
-| `POST /channel-invites/:token/accept` | Add caller to that invited channel only. |
-| `POST /channels/migrate-legacy` | Configured legacy-channel owner migration. |
+| Method / path                         | Purpose / access                                                         |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| `GET /`                               | Public health response.                                                  |
+| `POST /new/channel`                   | Create private channel owned by caller; body `{ "channelName": "..." }`. |
+| `GET /get/channelList`                | Explicit public and caller-owned/member channels only.                   |
+| `GET /get/data`                       | Caller-accessible channel data only.                                     |
+| `GET /get/conversation?id=:channelId` | Read accessible channel conversation.                                    |
+| `POST /new/message?id=:channelId`     | Send text/voice/attachment to accessible channel.                        |
+| `POST /channels/:id/invites`          | Owner-only, seven-day channel invite.                                    |
+| `GET /channel-invites/:token`         | Public invite preview; does not join.                                    |
+| `POST /channel-invites/:token/accept` | Add caller to that invited channel only.                                 |
+| `POST /channels/migrate-legacy`       | Configured legacy-channel owner migration.                               |
 
 ### Groups and friends
 
-| Method / path | Purpose / access |
-| --- | --- |
-| `POST /groups` | Create group with caller as creator/member; body `{ "name": "..." }`. |
-| `GET /groups` | Membership-filtered group list. |
-| `GET /groups/:id` | Group member only; get one group directory. |
-| `GET /group-invites/:inviteCode` | Authenticated invite preview; no member list. |
-| `POST /groups/join` | Join only code-matched group; body `{ "inviteCode": "..." }`. |
-| `POST /groups/:id/members` | Group creator adds an existing Firebase account by UID/email. |
-| `GET /friends` | Own friend code, accepted friends, incoming requests. |
-| `POST /friend-requests` | Send using `{ "friendCode": "FRIEND-..." }`. |
-| `POST /friend-requests/:id/accept` | Recipient accepts pending request. |
+| Method / path                      | Purpose / access                                                      |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| `POST /groups`                     | Create group with caller as creator/member; body `{ "name": "..." }`. |
+| `GET /groups`                      | Membership-filtered group list.                                       |
+| `GET /groups/:id`                  | Group member only; get one group directory.                           |
+| `GET /group-invites/:inviteCode`   | Authenticated invite preview; no member list.                         |
+| `POST /groups/join`                | Join only code-matched group; body `{ "inviteCode": "..." }`.         |
+| `POST /groups/:id/members`         | Group creator adds an existing Firebase account by UID/email.         |
+| `GET /friends`                     | Own friend code, accepted friends, incoming requests.                 |
+| `POST /friend-requests`            | Send using `{ "friendCode": "FRIEND-..." }`.                          |
+| `POST /friend-requests/:id/accept` | Recipient accepts pending request.                                    |
 
 ### DMs, realtime, voice, timers
 
-| Method / path | Purpose / access |
-| --- | --- |
-| `GET /dm` | List caller's DMs. |
-| `POST /dm` | Start/find DM after mutual friendship; `{ "recipient": "UID or email" }`. |
-| `GET /dm/:id` | Participant-only DM read. |
-| `POST /dm/:id/messages` | Participant-only DM message write. |
-| `POST /pusher/auth` | Authorize private subscription for room member/DM participant. |
-| `POST /api/voice/token` | Membership-checked LiveKit token; body `{ "roomName": "room/group ID" }`. |
-| `POST /api/channels/:id/timer` | Member proposes/accepts/disables timer (0–86400 seconds). |
+| Method / path                          | Purpose / access                                                            |
+| -------------------------------------- | --------------------------------------------------------------------------- |
+| `GET /dm`                              | List caller's DMs.                                                          |
+| `POST /dm`                             | Start/find DM after mutual friendship; `{ "recipient": "UID or email" }`.   |
+| `GET /dm/:id`                          | Participant-only DM read.                                                   |
+| `POST /dm/:id/messages`                | Participant-only DM message write.                                          |
+| `POST /pusher/auth`                    | Authorize private subscription for room member/DM participant.              |
+| `POST /api/voice/token`                | Membership-checked LiveKit token; body `{ "roomName": "room/group ID" }`.   |
+| `POST /api/channels/:id/timer`         | Member proposes/accepts/disables timer (0–86400 seconds).                   |
 | `POST /api/messages/new?id=:channelId` | Authenticated legacy timer-aware channel send route; prefer `/new/message`. |
 
 ## Security and migration
