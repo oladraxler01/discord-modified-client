@@ -19,7 +19,6 @@ const formatTimestamp = (timestamp) => {
 };
 
 const Message = ({ timestamp, user, message, voiceData, attachment }) => {
-
   const isGif =
     typeof message === "string" &&
     /^https?:\/\/.+\.gif(?:\?.*)?$/i.test(message);
@@ -67,7 +66,13 @@ const Message = ({ timestamp, user, message, voiceData, attachment }) => {
                   rel="noopener noreferrer"
                   download={attachment.name}
                 >
-                  <span className="message__attachmentIcon" role="img" aria-label="paperclip emoji">📎</span>
+                  <span
+                    className="message__attachmentIcon"
+                    role="img"
+                    aria-label="paperclip emoji"
+                  >
+                    📎
+                  </span>
                   {attachment.name}
                 </a>
               )}

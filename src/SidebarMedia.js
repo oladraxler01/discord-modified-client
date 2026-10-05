@@ -7,7 +7,8 @@ const IMAGE_MIME = /^image\//i;
 const VIDEO_MIME = /^video\//i;
 const URL_PATTERN = /https?:\/\/[^\s<>"']+/gi;
 
-const getExtension = (name = "") => name.split(".").pop()?.toLowerCase() || "file";
+const getExtension = (name = "") =>
+  name.split(".").pop()?.toLowerCase() || "file";
 const formatSize = (size) => {
   if (!Number.isFinite(Number(size)) || Number(size) <= 0) return "Shared link";
   const bytes = Number(size);
@@ -30,9 +31,17 @@ const mediaFromMessage = (message, index) => {
       type,
       size: attachment.size,
     };
-    if (VIDEO_MIME.test(type) || VIDEO_EXTENSIONS.test(name) || VIDEO_EXTENSIONS.test(url)) {
+    if (
+      VIDEO_MIME.test(type) ||
+      VIDEO_EXTENSIONS.test(name) ||
+      VIDEO_EXTENSIONS.test(url)
+    ) {
       result.push({ ...item, category: "video" });
-    } else if (IMAGE_MIME.test(type) || IMAGE_EXTENSIONS.test(name) || IMAGE_EXTENSIONS.test(url)) {
+    } else if (
+      IMAGE_MIME.test(type) ||
+      IMAGE_EXTENSIONS.test(name) ||
+      IMAGE_EXTENSIONS.test(url)
+    ) {
       result.push({ ...item, category: "image" });
     } else {
       result.push({ ...item, category: "file" });
@@ -42,19 +51,38 @@ const mediaFromMessage = (message, index) => {
   const text = typeof message?.message === "string" ? message.message : "";
   const links = text.match(URL_PATTERN) || [];
   links.forEach((url, linkIndex) => {
-    if (attachment && (attachment.url === url || attachment.dataUrl === url)) return;
+    if (attachment && (attachment.url === url || attachment.dataUrl === url))
+      return;
     const cleanUrl = url.replace(/[),.!?]+$/, "");
     if (IMAGE_EXTENSIONS.test(cleanUrl)) {
-      result.push({ id: `${message._id || index}-image-${linkIndex}`, name: cleanUrl.split("/").pop(), url: cleanUrl, category: "image", type: "image/link" });
+      result.push({
+        id: `${message._id || index}-image-${linkIndex}`,
+        name: cleanUrl.split("/").pop(),
+        url: cleanUrl,
+        category: "image",
+        type: "image/link",
+      });
     } else if (VIDEO_EXTENSIONS.test(cleanUrl)) {
-      result.push({ id: `${message._id || index}-video-${linkIndex}`, name: cleanUrl.split("/").pop(), url: cleanUrl, category: "video", type: "video/link" });
+      result.push({
+        id: `${message._id || index}-video-${linkIndex}`,
+        name: cleanUrl.split("/").pop(),
+        url: cleanUrl,
+        category: "video",
+        type: "video/link",
+      });
     } else {
       const pathParts = cleanUrl
         .replace(/^https?:\/\/[^/]+/i, "")
         .split("/")
         .filter(Boolean);
       const linkName = pathParts.pop() || cleanUrl.replace(/^https?:\/\//i, "");
-      result.push({ id: `${message._id || index}-link-${linkIndex}`, name: linkName, url: cleanUrl, category: "file", type: "link" });
+      result.push({
+        id: `${message._id || index}-link-${linkIndex}`,
+        name: linkName,
+        url: cleanUrl,
+        category: "file",
+        type: "link",
+      });
     }
   });
   return result;
@@ -70,26 +98,56 @@ const SidebarMedia = ({ messages = [], isOpen = false }) => {
     if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
   };
 
-  const emptyState = <p className="sidebar-media__empty">No media uploaded yet</p>;
+  const emptyState = (
+    <p className="sidebar-media__empty">No media uploaded yet</p>
+  );
   return (
-    <aside id="shared-media-panel" className={`app-rail ${isOpen ? "is-open" : ""}`} aria-label="Shared media">
+    <aside
+      id="shared-media-panel"
+      className={`app-rail ${isOpen ? "is-open" : ""}`}
+      aria-label="Shared media"
+    >
       <section className="app-rail__panel">
-        <h3 className="app-rail__header"><span aria-hidden="true">◫</span> Videos</h3>
+        <h3 className="app-rail__header">
+          <span aria-hidden="true">◫</span> Videos
+        </h3>
         <div className="app-rail__grid app-rail__grid--two">
           {videos.map((item) => (
-            <button className="app-rail__mediaCard app-rail__mediaCard--video" key={item.id} type="button" onClick={() => openItem(item)} disabled={!item.url}>
-              {item.url && <video src={item.url} muted preload="metadata" aria-hidden="true" />}
-              <span>{item.name}</span><small>{formatSize(item.size)}</small>
+            <button
+              className="app-rail__mediaCard app-rail__mediaCard--video"
+              key={item.id}
+              type="button"
+              onClick={() => openItem(item)}
+              disabled={!item.url}
+            >
+              {item.url && (
+                <video
+                  src={item.url}
+                  muted
+                  preload="metadata"
+                  aria-hidden="true"
+                />
+              )}
+              <span>{item.name}</span>
+              <small>{formatSize(item.size)}</small>
             </button>
           ))}
           {videos.length === 0 && emptyState}
         </div>
       </section>
       <section className="app-rail__panel">
-        <h3 className="app-rail__header"><span aria-hidden="true">◧</span> Images</h3>
+        <h3 className="app-rail__header">
+          <span aria-hidden="true">◧</span> Images
+        </h3>
         <div className="app-rail__imageGrid">
           {images.map((item) => (
-            <button className="app-rail__image" key={item.id} type="button" onClick={() => openItem(item)} title={item.name}>
+            <button
+              className="app-rail__image"
+              key={item.id}
+              type="button"
+              onClick={() => openItem(item)}
+              title={item.name}
+            >
               <img src={item.url} alt={item.name} loading="lazy" />
             </button>
           ))}
@@ -97,12 +155,28 @@ const SidebarMedia = ({ messages = [], isOpen = false }) => {
         </div>
       </section>
       <section className="app-rail__panel">
-        <h3 className="app-rail__header"><span aria-hidden="true">▣</span> Files</h3>
+        <h3 className="app-rail__header">
+          <span aria-hidden="true">▣</span> Files
+        </h3>
         <div className="app-rail__fileList">
           {files.map((item) => (
-            <button className="app-rail__fileItem" key={item.id} type="button" onClick={() => openItem(item)} disabled={!item.url}>
-              <span className={`app-rail__fileBadge app-rail__fileBadge--${getExtension(item.name)}`} aria-hidden="true">{getExtension(item.name).slice(0, 3).toUpperCase()}</span>
-              <span className="app-rail__fileDetails"><strong>{item.name}</strong><small>{formatSize(item.size)}</small></span>
+            <button
+              className="app-rail__fileItem"
+              key={item.id}
+              type="button"
+              onClick={() => openItem(item)}
+              disabled={!item.url}
+            >
+              <span
+                className={`app-rail__fileBadge app-rail__fileBadge--${getExtension(item.name)}`}
+                aria-hidden="true"
+              >
+                {getExtension(item.name).slice(0, 3).toUpperCase()}
+              </span>
+              <span className="app-rail__fileDetails">
+                <strong>{item.name}</strong>
+                <small>{formatSize(item.size)}</small>
+              </span>
             </button>
           ))}
           {files.length === 0 && emptyState}

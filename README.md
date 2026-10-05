@@ -1,86 +1,158 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), using the [Redux](https://redux.js.org/) and [Redux Toolkit](https://redux-toolkit.js.org/) template.
+# VEIL — private community chat
 
-## API and chat invite links
+VEIL combines a React chat client and Node/Express API with Google sign-in, private channels, group-specific invitations, friends, DMs, file/voice messages, real-time notifications, themes, and responsive mobile layouts.
 
-The frontend uses `https://discord-modified-api.onrender.com` as its default API. To override it locally, copy `.env.example` to `.env.local`, set `REACT_APP_API_URL` to your backend URL, and restart the React dev server.
+> **Security:** MongoDB and Pusher credentials were previously committed in backend source. Current code reads secrets from environment variables, but old Git history still contains earlier values. Rotate those credentials in their provider consoles. Never commit real `.env` files, Firebase Admin service-account JSON, database URIs, Pusher secrets, or LiveKit secrets.
 
-Each text channel has a **Copy link** action in the sidebar. Invite URLs use `/chat/:roomId`; opening one selects that room and subscribes to its `chat-<roomId>` Pusher channel. When deploying the frontend as a static site, configure the host to rewrite unknown paths such as `/chat/*` to `index.html` so direct invite links load the React app.
+## Technology stack
 
-## Direct messages
+- Client: React 16, Create React App 3, React Router v5, Redux Toolkit, Material UI v4, Framer Motion, emoji-picker-react, CSS.
+- Authentication: Firebase Authentication client; Firebase Admin verifies backend ID tokens.
+- API/data: Node.js, Express 5, Axios, MongoDB Atlas, Mongoose 9.
+- Realtime/voice: Pusher client/server SDK, LiveKit token SDK, browser MediaRecorder.
+- Hosting: Vercel/static frontend and Render API.
 
-Signed-in users can start a private one-to-one conversation from the **Direct Messages** section by entering another Firebase user's UID or email. The backend verifies Firebase ID tokens, only returns a DM to its two participants, and uses an authenticated Pusher private channel for new-message notifications. Configure `FIREBASE_SERVICE_ACCOUNT_JSON` on the backend host using the Firebase project's service-account JSON (keep it in deployment secrets; never commit it). Without that server-side credential, private messaging intentionally fails closed.
+## Local setup
 
-The client uses Framer Motion 4 for subtle transitions between rooms and uses the existing Discord-inspired CSS theme; this repository does not use Tailwind.
+Requirements: Node.js 20.19+ (Mongoose 9), npm, Firebase project, MongoDB Atlas. Pusher and LiveKit accounts are needed for those integrations.
 
-## Friends and private channel invites
+### Frontend
 
-Use **Add friend** to enter a friend's `FRIEND-XXXXXXXX` code, share your own code from the Friends section, and accept incoming requests. Once accepted, select **Message** beside a friend to open a DM.
+From this directory:
 
-New text channels are private to their creator. The owner can use **Invite** to create a seven-day link. The recipient signs in, sees which single channel the invite grants access to, then accepts; that adds membership to only that channel. Existing legacy channels require the one-time owner migration described in the backend README. Direct room IDs alone do not grant membership.
+```sh
+npm install
+```
 
-## Available Scripts
+Copy `.env.example` to `.env.local`. Set `REACT_APP_API_URL` to the backend origin if using a different API. Configure the Firebase web app in `src/firebase.js`, enable Google sign-in, and add `localhost` and deployed domains under Firebase Authentication → Settings → Authorized domains. Run `npm start` or `npm run build`.
 
-In the project directory, you can run:
+### Backend
 
-### `npm start`
+```sh
+cd ../discord-backend
+npm install
+npm run dev
+```
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Copy `discord-backend/.env.example` to `discord-backend/.env`. For Render, set these in the service environment dashboard instead of deploying a `.env` file.
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+| Environment variable | Purpose |
+| --- | --- |
+| `PORT` | API HTTP port; defaults to 8002. |
+| `MONGO_URI` | MongoDB connection string; required for data routes. |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Admin service-account JSON for the same project; secret. |
+| `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER` | Pusher server configuration; keep secret private. |
+| `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit server token signing; keep secret private. |
+| `CHANNEL_MIGRATION_OWNER_UID` | Temporary UID allowed to migrate old channels; remove after migration. |
 
-### `npm test`
+The backend loads local `.env` values with dotenv. Hosting providers should use environment settings.
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Browser routes
 
-### `npm run build`
+| Route | Purpose |
+| --- | --- |
+| `/` | Signed-in app home. |
+| `/chat/:roomId` | Channel conversation; API checks access. |
+| `/dm/:roomId` | Participant-only direct message. |
+| `/invite/:token` | Preview/accept a seven-day invite to one channel. |
+| `/join/:inviteCode` | Preview/accept a specific group invitation. |
+| `/groups/:groupId` | Member-only group directory and invite actions. |
+| `/settings` | View/edit Firebase profile display name. |
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Static hosting must rewrite these deep paths to `index.html`.
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+## Features and access model
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Sign-in and profile
 
-### `npm run eject`
+Google sign-in uses Firebase Authentication. Axios attaches the current Firebase ID token as a Bearer token. The backend verifies it with Firebase Admin and uses the verified UID for identity and authorization. Settings shows avatar, display name, email, and UID; name edits update Firebase Auth and Redux state.
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### Private channels
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+New channels are invite-only and owned by their creator. The owner creates a random seven-day link. The recipient signs in, previews `/invite/:token`, and accepts; only that channel membership is added. Lists, reads, writes, and private Pusher subscriptions require explicit public access or owner/member access. Knowing a channel ID does not grant access. Unclassified legacy channels remain denied until migrated.
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### Groups and group-specific invitations
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+Creating a group makes the authenticated user its creator and first member. `GET /groups` returns only groups that include the authenticated UID. Every group has its own `/join/:inviteCode` link and `/groups/:groupId` page. Accepting an invite adds membership only to the referenced group. Group detail reads require membership; only its creator can add an existing Firebase account by UID/email. This does not grant access to channels, DMs, or other groups.
 
-## Learn More
+Group invites are bearer invitations: anyone holding the link can request to join that one group. Existing short codes are upgraded to high-entropy codes when a member next loads their group list; old links then stop working, so share the updated link. Manual invite rotation/revocation UI is not implemented yet.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Groups currently provide a separate member directory, invite management, and call launch, but no persisted group text-message history. Google Meet is external, so VEIL does not control access inside that meeting. LiveKit tokens are separately checked against VEIL room membership.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Friends and DMs
 
-### Code Splitting
+Every user has a `FRIEND-XXXXXXXX` code. Send a friend request with that code; the recipient accepts it. A DM can be created only after mutual friendship. DM list/read/write operations are restricted to the two participant UIDs.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+### Messaging and media
 
-### Analyzing the Bundle Size
+Text, voice-note data, and attachment metadata/data URLs are stored in MongoDB conversation records. The file picker allows common documents, images, videos, audio, and archives up to 8 MiB (Express JSON limit: 10 MiB). Files currently live as data URLs in MongoDB; production-scale deployments should use object storage. Media panels are derived from the active conversation's actual attachments and image/video/general links. Voice notes use MediaRecorder and require microphone permission plus HTTPS (localhost is allowed). Pusher events contain room identifiers, not message bodies; the client refetches via authorized APIs.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+Ephemeral timers require authenticated room membership and participant agreement; messages receive expiry metadata and a background sweeper removes expired entries.
 
-### Making a Progressive Web App
+### Themes, search, mobile
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+Light is the default; Violet and Midnight are persisted in browser local storage. Search filters the loaded messages by text, author, attachment name, and link. Mobile Channels and Shared files drawers are independent. Sidebar list, chat messages, media panel, and page each have isolated scrolling.
 
-### Advanced Configuration
+## API routes
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+Except the health route and channel invite preview, routes require `Authorization: Bearer <Firebase ID token>`. Sender UID comes from the verified token, not the request body.
 
-### Deployment
+### Channels
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+| Method / path | Purpose / access |
+| --- | --- |
+| `GET /` | Public health response. |
+| `POST /new/channel` | Create private channel owned by caller; body `{ "channelName": "..." }`. |
+| `GET /get/channelList` | Explicit public and caller-owned/member channels only. |
+| `GET /get/data` | Caller-accessible channel data only. |
+| `GET /get/conversation?id=:channelId` | Read accessible channel conversation. |
+| `POST /new/message?id=:channelId` | Send text/voice/attachment to accessible channel. |
+| `POST /channels/:id/invites` | Owner-only, seven-day channel invite. |
+| `GET /channel-invites/:token` | Public invite preview; does not join. |
+| `POST /channel-invites/:token/accept` | Add caller to that invited channel only. |
+| `POST /channels/migrate-legacy` | Configured legacy-channel owner migration. |
 
-### `npm run build` fails to minify
+### Groups and friends
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+| Method / path | Purpose / access |
+| --- | --- |
+| `POST /groups` | Create group with caller as creator/member; body `{ "name": "..." }`. |
+| `GET /groups` | Membership-filtered group list. |
+| `GET /groups/:id` | Group member only; get one group directory. |
+| `GET /group-invites/:inviteCode` | Authenticated invite preview; no member list. |
+| `POST /groups/join` | Join only code-matched group; body `{ "inviteCode": "..." }`. |
+| `POST /groups/:id/members` | Group creator adds an existing Firebase account by UID/email. |
+| `GET /friends` | Own friend code, accepted friends, incoming requests. |
+| `POST /friend-requests` | Send using `{ "friendCode": "FRIEND-..." }`. |
+| `POST /friend-requests/:id/accept` | Recipient accepts pending request. |
+
+### DMs, realtime, voice, timers
+
+| Method / path | Purpose / access |
+| --- | --- |
+| `GET /dm` | List caller's DMs. |
+| `POST /dm` | Start/find DM after mutual friendship; `{ "recipient": "UID or email" }`. |
+| `GET /dm/:id` | Participant-only DM read. |
+| `POST /dm/:id/messages` | Participant-only DM message write. |
+| `POST /pusher/auth` | Authorize private subscription for room member/DM participant. |
+| `POST /api/voice/token` | Membership-checked LiveKit token; body `{ "roomName": "room/group ID" }`. |
+| `POST /api/channels/:id/timer` | Member proposes/accepts/disables timer (0–86400 seconds). |
+| `POST /api/messages/new?id=:channelId` | Authenticated legacy timer-aware channel send route; prefer `/new/message`. |
+
+## Security and migration
+
+- Channel records without explicit access metadata are denied. An ObjectId is not an access grant.
+- Group lists and detail are membership-scoped; member additions are creator-only. Group and channel invites are distinct scopes.
+- DMs are participant-scoped and require mutual friendship to create.
+- Rotate credentials ever committed to Git; a later deletion does not erase old Git history.
+- To migrate old channels, set `CHANNEL_MIGRATION_OWNER_UID` in Render, sign in as that account, use **Secure old** once, then remove the variable.
+- Firebase browser config is public client config; restrict its API key/domains. Never expose Firebase Admin JSON.
+
+## Scripts and checks
+
+- `npm start` — frontend development server.
+- `npm test` — Create React App test runner.
+- `npm run build` — optimized frontend build.
+- Backend `npm start` / `npm run dev` — production server / nodemon.
+- `node --check server.js` — backend syntax check.
+- Backend automated tests are not implemented; its current `npm test` is a placeholder.

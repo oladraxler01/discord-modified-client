@@ -361,7 +361,8 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
     e.preventDefault();
     if (!activeChannelId) return;
 
-    const messageText = input.trim() ||
+    const messageText =
+      input.trim() ||
       (voiceData ? "🎤 Voice note" : attachment ? `📎 ${attachment.name}` : "");
 
     if (!messageText && !attachment && !voiceData) return;
@@ -527,7 +528,9 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
 
     const maxFileSize = 8 * 1024 * 1024;
     if (file.size > maxFileSize) {
-      setAttachmentError("Files should be 8MB or smaller for a smooth Veil message.");
+      setAttachmentError(
+        "Files should be 8MB or smaller for a smooth Veil message.",
+      );
       return;
     }
 
@@ -575,7 +578,10 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
       item.user?.displayName,
       item.attachment?.name,
       item.attachment?.url,
-    ].filter(Boolean).join(" ").toLocaleLowerCase();
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLocaleLowerCase();
     return searchableText.includes(query);
   });
 
@@ -669,13 +675,17 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
                 fontWeight: "bold",
               }}
             >
-              <span role="img" aria-label="fire emoji">🔥</span>{" "}
+              <span role="img" aria-label="fire emoji">
+                🔥
+              </span>{" "}
               Burn-on-Read active ({ephemeralSettings.durationInSeconds}s)
             </div>
           )}
 
           {searchTerm && filteredMessages.length === 0 && (
-            <p className="chat__searchEmpty">No messages match “{searchTerm}”.</p>
+            <p className="chat__searchEmpty">
+              No messages match “{searchTerm}”.
+            </p>
           )}
           {filteredMessages.map((message, index) => (
             <Message
@@ -710,7 +720,9 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
           {attachment && (
             <div className="chat__attachmentPreview" aria-live="polite">
               <span>
-                <span role="img" aria-label="paperclip emoji">📎</span>{" "}
+                <span role="img" aria-label="paperclip emoji">
+                  📎
+                </span>{" "}
                 {attachment.name}
               </span>
               <button type="button" onClick={() => setAttachment(null)}>

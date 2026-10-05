@@ -125,6 +125,13 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
     };
   }, [getChannels, getGroups, getDirectMessages, getFriends]);
 
+  useEffect(() => {
+    const refreshGroups = () => getGroups();
+    window.addEventListener("veil-groups-updated", refreshGroups);
+    return () =>
+      window.removeEventListener("veil-groups-updated", refreshGroups);
+  }, [getGroups]);
+
   const handleStartDirectMessage = (recipientUid) => {
     if (!recipientUid) return;
 
@@ -457,7 +464,13 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
               key={group._id || group.inviteCode}
             >
               <div className="sidebar__groupInfo">
-                <strong>{group.name}</strong>
+                <Link
+                  className="sidebar__groupLink"
+                  to={`/groups/${group._id || group.inviteCode}`}
+                  onClick={onNavigate}
+                >
+                  <strong>{group.name}</strong>
+                </Link>
                 <span>{group.inviteCode}</span>
               </div>
               <div className="sidebar__groupButtons">
@@ -494,7 +507,10 @@ const Sidebar = ({ isOpen = false, onNavigate }) => {
           <button
             className="sidebar__settingsButton"
             type="button"
-            onClick={() => history.push("/settings")}
+            onClick={() => {
+              history.push("/settings");
+              if (onNavigate) onNavigate();
+            }}
             aria-label="Open settings"
             title="Settings"
           >

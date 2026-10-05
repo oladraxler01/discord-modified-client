@@ -12,6 +12,8 @@ import { Route, Switch } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
 import SidebarMedia from "./SidebarMedia";
 import Settings from "./Settings";
+import GroupInvite from "./GroupInvite";
+import GroupRoom from "./GroupRoom";
 import { useTheme } from "./ThemeContext";
 
 function App() {
@@ -141,21 +143,45 @@ function App() {
           </div>
 
           <nav className="app-nav" aria-label="Primary navigation">
-            <Link className={`app-nav__button ${location.pathname === "/" || location.pathname.startsWith("/chat/") || location.pathname.startsWith("/dm/") ? "is-active" : ""}`} to="/" aria-label="Messages" title="Messages">
+            <Link
+              className={`app-nav__button ${location.pathname === "/" || location.pathname.startsWith("/chat/") || location.pathname.startsWith("/dm/") ? "is-active" : ""}`}
+              to="/"
+              aria-label="Messages"
+              title="Messages"
+            >
               ◌
             </Link>
-            <button className="app-nav__button" type="button" aria-label="Search messages" title="Search messages" onClick={() => chatActions.current?.focusSearch()}>
+            <button
+              className="app-nav__button"
+              type="button"
+              aria-label="Search messages"
+              title="Search messages"
+              onClick={() => chatActions.current?.focusSearch()}
+            >
               ⌕
             </button>
-            <button className="app-nav__button" type="button" aria-label="Start call" title="Start call" onClick={() => chatActions.current?.startCall()}>
+            <button
+              className="app-nav__button"
+              type="button"
+              aria-label="Start call"
+              title="Start call"
+              onClick={() => chatActions.current?.startCall()}
+            >
               ☎
             </button>
-            <Link className={`app-nav__button ${location.pathname === "/settings" ? "is-active" : ""}`} to="/settings" aria-label="Settings" title="Settings">
+            <Link
+              className={`app-nav__button ${location.pathname === "/settings" ? "is-active" : ""}`}
+              to="/settings"
+              aria-label="Settings"
+              title="Settings"
+            >
               ⚙
             </Link>
           </nav>
 
-          <div className={`app-channel-column ${isSidebarOpen ? "is-open" : ""}`}>
+          <div
+            className={`app-channel-column ${isSidebarOpen ? "is-open" : ""}`}
+          >
             <Sidebar
               isOpen={isSidebarOpen}
               onNavigate={() => setIsSidebarOpen(false)}
@@ -181,34 +207,54 @@ function App() {
             )}
             <Switch>
               <Route path="/invite/:token" component={ChannelInvite} />
+              <Route path="/join/:inviteCode" component={GroupInvite} />
               <Route exact path="/settings" component={Settings} />
+              <Route path="/groups/:groupId" component={GroupRoom} />
               <Route
                 path="/dm/:roomId"
                 render={(props) => (
-                  <Chat {...props} onMessagesChange={setActiveMessages} onRegisterActions={registerChatActions} />
+                  <Chat
+                    {...props}
+                    onMessagesChange={setActiveMessages}
+                    onRegisterActions={registerChatActions}
+                  />
                 )}
               />
               <Route
                 path="/chat/:roomId"
                 render={(props) => (
-                  <Chat {...props} onMessagesChange={setActiveMessages} onRegisterActions={registerChatActions} />
+                  <Chat
+                    {...props}
+                    onMessagesChange={setActiveMessages}
+                    onRegisterActions={registerChatActions}
+                  />
                 )}
               />
               <Route
                 exact
                 path="/"
                 render={(props) => (
-                  <Chat {...props} onMessagesChange={setActiveMessages} onRegisterActions={registerChatActions} />
+                  <Chat
+                    {...props}
+                    onMessagesChange={setActiveMessages}
+                    onRegisterActions={registerChatActions}
+                  />
                 )}
               />
               <Route
                 render={(props) => (
-                  <Chat {...props} onMessagesChange={setActiveMessages} onRegisterActions={registerChatActions} />
+                  <Chat
+                    {...props}
+                    onMessagesChange={setActiveMessages}
+                    onRegisterActions={registerChatActions}
+                  />
                 )}
               />
             </Switch>
           </div>
-          {location.pathname !== "/settings" && (
+          {(location.pathname === "/" ||
+            location.pathname.startsWith("/chat/") ||
+            location.pathname.startsWith("/dm/")) && (
             <SidebarMedia
               messages={activeMessages}
               isOpen={isMediaOpen}

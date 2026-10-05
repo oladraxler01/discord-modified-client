@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 const ThemeContext = createContext(null);
 const VALID_THEMES = ["light", "violet", "midnight"];
@@ -14,8 +20,13 @@ export const ThemeProvider = ({ children }) => {
     window.localStorage.setItem("veil-chat-theme", currentTheme);
   }, [currentTheme]);
 
-  const value = useMemo(() => ({ currentTheme, setCurrentTheme }), [currentTheme]);
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  const value = useMemo(
+    () => ({ currentTheme, setCurrentTheme }),
+    [currentTheme],
+  );
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 };
 
 export const useTheme = () => {
