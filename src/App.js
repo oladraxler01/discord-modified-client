@@ -108,7 +108,7 @@ function App() {
   return (
     <div className="app" data-theme={chatTheme}>
       {user ? (
-        <>
+        <div className="app-shell">
           <div className="app__mobileBar">
             <button
               className="app__menuButton"
@@ -121,11 +121,30 @@ function App() {
               <span>Channels</span>
             </button>
           </div>
-          <div className="app__content">
+
+          <nav className="app-nav" aria-label="Primary navigation">
+            <button className="app-nav__button is-active" type="button" aria-label="Messages">
+              ◌
+            </button>
+            <button className="app-nav__button" type="button" aria-label="Search">
+              ⌕
+            </button>
+            <button className="app-nav__button" type="button" aria-label="Calls">
+              ☎
+            </button>
+            <button className="app-nav__button" type="button" aria-label="Settings">
+              ⚙
+            </button>
+          </nav>
+
+          <div className="app-channel-column">
             <Sidebar
               isOpen={isSidebarOpen}
               onNavigate={() => setIsSidebarOpen(false)}
             />
+          </div>
+
+          <div className="app-chat-column">
             {isSidebarOpen && (
               <button
                 className="app__backdrop"
@@ -162,7 +181,69 @@ function App() {
               />
             </Switch>
           </div>
-        </>
+
+          <aside className="app-rail" aria-label="Shared media">
+            <div className="app-rail__panel">
+              <div className="app-rail__header">
+                <span className="app-rail__icon">◫</span>
+                <strong>Videos</strong>
+              </div>
+              <div className="app-rail__grid app-rail__grid--two">
+                <div className="app-rail__mediaCard app-rail__mediaCard--orange">
+                  <span>Presentation Fluid</span>
+                  <small>2A MB</small>
+                </div>
+                <div className="app-rail__mediaCard app-rail__mediaCard--light">
+                  <span>Digital Course</span>
+                  <small>2A MB</small>
+                </div>
+              </div>
+            </div>
+
+            <div className="app-rail__panel">
+              <div className="app-rail__header">
+                <span className="app-rail__icon">◧</span>
+                <strong>Images</strong>
+              </div>
+              <div className="app-rail__imageGrid">
+                <div className="app-rail__image app-rail__image--peach" />
+                <div className="app-rail__image app-rail__image--cyan" />
+                <div className="app-rail__image app-rail__image--violet" />
+                <div className="app-rail__image app-rail__image--mint" />
+              </div>
+            </div>
+
+            <div className="app-rail__panel">
+              <div className="app-rail__header">
+                <span className="app-rail__icon">▣</span>
+                <strong>Files</strong>
+              </div>
+              <div className="app-rail__fileList">
+                <div className="app-rail__fileItem">
+                  <span className="app-rail__fileBadge" />
+                  <div>
+                    <strong>Marketing Documentation.pdf</strong>
+                    <small>1.7 MB</small>
+                  </div>
+                </div>
+                <div className="app-rail__fileItem">
+                  <span className="app-rail__fileBadge app-rail__fileBadge--peach" />
+                  <div>
+                    <strong>How It Affects The Product.pdf</strong>
+                    <small>2.1 MB</small>
+                  </div>
+                </div>
+                <div className="app-rail__fileItem">
+                  <span className="app-rail__fileBadge app-rail__fileBadge--green" />
+                  <div>
+                    <strong>Team Review 2025.pdf</strong>
+                    <small>0.8 MB</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
       ) : (
         <Login />
       )}

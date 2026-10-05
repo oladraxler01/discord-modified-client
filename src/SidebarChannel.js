@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import axios from "./axios";
 import "./SidebarChannel.css";
 
@@ -10,6 +10,9 @@ const SidebarChannel = ({
   isOwner,
   onNavigate,
 }) => {
+  const location = useLocation();
+  const isActive = location.pathname === `/chat/${encodeURIComponent(id)}`;
+
   const createInvite = async () => {
     try {
       const response = await axios.post(`/channels/${id}/invites`);
@@ -27,7 +30,7 @@ const SidebarChannel = ({
   return (
     <div className="sidebarChannel">
       <Link
-        className="sidebarChannel__link"
+        className={`sidebarChannel__link ${isActive ? "is-active" : ""}`}
         to={`/chat/${encodeURIComponent(id)}`}
         onClick={onNavigate}
       >
