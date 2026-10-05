@@ -1,14 +1,13 @@
 import { Avatar } from "@material-ui/core";
 import React, { useState, useEffect } from "react";
 import "./Message.css";
-import axios from "./axios"; // Ensures we use your configured Axios instance
+import axios from "./axios";
 
 const formatTimestamp = (timestamp) => {
   if (timestamp === undefined || timestamp === null || timestamp === "") {
     return "Time unavailable";
   }
 
-  // Older messages stored epoch milliseconds as strings, which Date parses as invalid.
   const value =
     typeof timestamp === "string" && /^\d+$/.test(timestamp)
       ? Number(timestamp)
@@ -20,8 +19,7 @@ const formatTimestamp = (timestamp) => {
     : date.toLocaleString();
 };
 
-// NOTICE: Added 'id' to the props here so we know which message to delete!
-const Message = ({ id, timestamp, user, message, voiceData }) => {
+const Message = ({ id, timestamp, user, message, voiceData, attachment }) => {
   const [isViewing, setIsViewing] = useState(false);
   const [hasBeenViewed, setHasBeenViewed] = useState(false);
   const [timeLeft, setTimeLeft] = useState(10);
@@ -31,16 +29,20 @@ const Message = ({ id, timestamp, user, message, voiceData }) => {
     typeof message === "string" &&
     /^https?:\/\/.+\.gif(?:\?.*)?$/i.test(message);
 
-  // Burn-on-Read Timer Logic
+  const attachmentIsImage =
+    attachment?.type?.startsWith("image/") ||
+    /\.(png|jpe?g|gif|webp|svg)$/i.test(attachment?.name || "");
+
   useEffect(() => {
     let timer;
     if (hasBeenViewed && timeLeft > 0) {
       timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     } else if (timeLeft === 0 && !isDestroyed) {
       setIsDestroyed(true);
-      // Trigger backend deletion when the timer hits zero
       if (id) {
-        axios.delete(`/api/messages/${id}`).catch(err => console.error("Failed to delete message:", err));
+        axios
+          .delete(`/api/messages/${id}`)
+          .catch((err) => console.error("Failed to delete message:", err));
       }
     }
     return () => clearInterval(timer);
@@ -51,7 +53,6 @@ const Message = ({ id, timestamp, user, message, voiceData }) => {
     setHasBeenViewed(true);
   };
 
-  // If the message has burned, completely remove it from the UI
   if (isDestroyed) return null;
 
   return (
@@ -65,23 +66,50 @@ const Message = ({ id, timestamp, user, message, voiceData }) => {
           </span>
         </h4>
 
-        {/* Hold-to-Reveal Wrapper */}
         <div
           className={`mt-1 transition-all duration-300 select-none cursor-pointer ${
             !isViewing
-              ? 'blur-md opacity-50 bg-white/10 rounded px-2 py-1 inline-block'
-              : 'blur-none opacity-100'
+              ? "blur-md opacity-50 bg-white/10 rounded px-2 py-1 inline-block"
+              : "blur-none opacity-100"
           }`}
           onMouseDown={handleReveal}
           onMouseUp={() => setIsViewing(false)}
           onMouseLeave={() => setIsViewing(false)}
           onTouchStart={handleReveal}
           onTouchEnd={() => setIsViewing(false)}
-          onContextMenu={(e) => e.preventDefault()} // Blocks right-click stealing
+          onContextMenu={(e) => e.preventDefault()}
         >
           {voiceData ? (
             <div className="message__audioWrap">
-              <audio controls src={voiceData} className="message__audio pointer-events-none" />
+              <audio
+                controls
+                src={voiceData}
+                className="message__audio pointer-events-none"
+              />
+            </div>
+          ) : null}
+
+          {attachment ? (
+            <div className="message__attachmentBlock">
+              {attachmentIsImage ? (
+                <img
+                  className="message__attachmentImage"
+                  src={attachment.dataUrl}
+                  alt={attachment.name}
+                  loading="lazy"
+                />
+              ) : (
+                <a
+                  className="message__attachmentLink"
+                  href={attachment.dataUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download={attachment.name}
+                >
+                  <span className="message__attachmentIcon" role="img" aria-label="paperclip emoji">📎</span>
+                  {attachment.name}
+                </a>
+              )}
             </div>
           ) : null}
 
@@ -93,15 +121,16 @@ const Message = ({ id, timestamp, user, message, voiceData }) => {
               loading="lazy"
             />
           ) : (
-            <p className={!isViewing ? 'text-transparent' : 'text-gray-100'}>{message}</p>
+            <p className={!isViewing ? "text-transparent" : "text-gray-100"}>
+              {message}
+            </p>
           )}
         </div>
       </div>
 
-      {/* The Countdown Fuse */}
       {hasBeenViewed && (
         <div className="absolute right-5 top-5 text-red-500 font-bold text-sm bg-black/40 px-2 py-1 rounded backdrop-blur-md">
-          00:{timeLeft.toString().padStart(2, '0')}
+          00:{timeLeft.toString().padStart(2, "0")}
         </div>
       )}
     </div>

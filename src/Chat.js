@@ -84,6 +84,9 @@ const Chat = () => {
   const [recordingError, setRecordingError] = useState("");
   const [voiceData, setVoiceData] = useState("");
   const [audioLevels, setAudioLevels] = useState(Array(18).fill(12));
+  const [attachment, setAttachment] = useState(null);
+  const [attachmentError, setAttachmentError] = useState("");
+  const fileInputRef = useRef(null);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -345,8 +348,10 @@ const Chat = () => {
     e.preventDefault();
     if (!activeChannelId) return;
 
-    const messageText = input.trim() || (voiceData ? "🎤 Voice note" : "");
-    if (!messageText) return;
+    const messageText = input.trim() ||
+      (voiceData ? "🎤 Voice note" : attachment ? `📎 ${attachment.name}` : "");
+
+    if (!messageText && !attachment && !voiceData) return;
 
     const payload = {
       message: messageText,
@@ -358,6 +363,10 @@ const Chat = () => {
       payload.voiceData = voiceData;
     }
 
+    if (attachment) {
+      payload.attachment = attachment;
+    }
+
     const messageRequest = isDirectMessage
       ? axios.post(`/dm/${activeChannelId}/messages`, payload)
       : axios.post(`/new/message?id=${activeChannelId}`, payload);
@@ -366,6 +375,8 @@ const Chat = () => {
       .then(() => {
         setInput("");
         setVoiceData("");
+        setAttachment(null);
+        setAttachmentError("");
         setAudioLevels(Array(18).fill(12));
         getConversation();
       })
@@ -496,7 +507,35 @@ const Chat = () => {
     }
   };
 
-  const hasDraft = input.trim() !== "" || Boolean(voiceData);
+  const handleFileSelection = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+
+    const maxFileSize = 8 * 1024 * 1024;
+    if (file.size > maxFileSize) {
+      setAttachmentError("Files should be 8MB or smaller for a smooth Veil message.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachment({
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: file.size,
+        dataUrl: reader.result,
+      });
+      setAttachmentError("");
+    };
+    reader.onerror = () => {
+      setAttachmentError("This file could not be read from your device.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const hasDraft =
+    input.trim() !== "" || Boolean(voiceData) || Boolean(attachment);
 
   const startConversationCall = () => {
     const callWindow = window.open(
@@ -591,7 +630,8 @@ const Chat = () => {
                 fontWeight: "bold",
               }}
             >
-              🔥 Burn-on-Read active ({ephemeralSettings.durationInSeconds}s)
+              <span role="img" aria-label="fire emoji">🔥</span>{" "}
+              Burn-on-Read active ({ephemeralSettings.durationInSeconds}s)
             </div>
           )}
 
@@ -603,12 +643,46 @@ const Chat = () => {
               timestamp={message.timestamp}
               user={message.user}
               voiceData={message.voiceData}
+              attachment={message.attachment}
             />
           ))}
         </div>
 
         <div className="chat__input">
-          <AddCircleIcon className="chat__addIcon" fontSize="large" />
+          <input
+            ref={fileInputRef}
+            type="file"
+            hidden
+            onChange={handleFileSelection}
+            accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.mp3,.wav,.zip,.rar"
+          />
+          <button
+            type="button"
+            className="chat__uploadButton"
+            aria-label="Attach a file"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <AddCircleIcon className="chat__addIcon" fontSize="large" />
+          </button>
+
+          {attachment && (
+            <div className="chat__attachmentPreview" aria-live="polite">
+              <span>
+                <span role="img" aria-label="paperclip emoji">📎</span>{" "}
+                {attachment.name}
+              </span>
+              <button type="button" onClick={() => setAttachment(null)}>
+                Remove
+              </button>
+            </div>
+          )}
+
+          {attachmentError && (
+            <p className="chat__attachmentError" role="alert">
+              {attachmentError}
+            </p>
+          )}
+
           {isRecording && (
             <div className="chat__recordingPanel" aria-live="polite">
               <span className="chat__recordingDot" />

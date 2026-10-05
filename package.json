@@ -13,6 +13,7 @@
     "emoji-picker-react": "^4.22.3",
     "firebase": "^7.23.0",
     "framer-motion": "^4.1.17",
+    "livekit-client": "^2.22.3",
     "pusher-js": "^8.6.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",

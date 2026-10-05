@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="veilBg" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6"/>
+      <stop offset="0.45" stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#EC4899"/>
+    </linearGradient>
+    <linearGradient id="veilGlow" x1="154" y1="132" x2="348" y2="356" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#C4B5FD"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="136" fill="url(#veilBg)"/>
+  <path d="M114 143C160.3 165.5 195 180.5 217 189.5L301 219.5C318.1 226.8 333.2 236.2 346 247.7L382 280.5C310.4 196.7 253.8 167.1 216.1 145.4C184.8 127.7 158.5 111.5 114 143Z" fill="rgba(255,255,255,0.12)"/>
+  <path d="M148 128L237 344C242.7 356.7 256.3 356.7 262 344L350 128H305L251 280L197 128H148Z" fill="url(#veilGlow)"/>
+  <path d="M92 366C140.7 340.7 182 321.6 217 307.5C246.7 295.8 298.1 277.5 420 256V318C314 340.9 249.4 358 216.5 367.2C180 377.4 149.5 394.8 92 438V366Z" fill="rgba(255,255,255,0.14)"/>
+  <circle cx="398" cy="132" r="14" fill="#67E8F9" fill-opacity="0.95"/>
+  <circle cx="140" cy="388" r="11" fill="#C4B5FD" fill-opacity="0.9"/>
+</svg>

@@ -62,23 +62,56 @@ const Login = () => {
       setIsSigningIn(false);
     }
   };
+
   return (
     <div className="login">
-      <div className="login__logo">
-        <img
-          src="https://www.freepnglogos.com/uploads/discord-logo-png/discord-logo-logodownload-download-logotipos-1.png"
-          alt="discord logo"
-        />
-      </div>
+      <div className="login__shell">
+        <div className="login__brand">
+          <img src="/veil-brand.svg" alt="Veil brand logo" />
+          <div className="login__wordmark">
+            <span>Veil</span>
+            <small>Private circles, shared moments</small>
+          </div>
+        </div>
 
-      <Button onClick={signIn} disabled={isSigningIn}>
-        {isSigningIn ? "Signing in…" : "Sign in with Google"}
-      </Button>
-      {error && (
-        <p className="login__error" role="alert">
-          {error}
-        </p>
-      )}
+        <div className="login__card">
+          <p className="login__eyebrow">Welcome back</p>
+          <h1>Secure your conversations.</h1>
+          <p className="login__subtext">
+            Jump into communities, direct messages, voice notes, and shared
+            files in a calmer, more polished space.
+          </p>
+
+          <Button
+            className="login__button"
+            onClick={signIn}
+            disabled={isSigningIn}
+          >
+            {isSigningIn ? "Connecting…" : "Continue with Google"}
+          </Button>
+
+          {error && (
+            <p className="login__error" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="login__meta" aria-label="Veil features">
+          <div>
+            <span>Private</span>
+            <strong>DMs</strong>
+          </div>
+          <div>
+            <span>Shared</span>
+            <strong>Files</strong>
+          </div>
+          <div>
+            <span>Live</span>
+            <strong>Rooms</strong>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
