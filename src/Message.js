@@ -4,6 +4,7 @@ import DescriptionIcon from "@material-ui/icons/Description";
 import GetAppIcon from "@material-ui/icons/GetApp";
 import WhatshotIcon from "@material-ui/icons/Whatshot";
 import LockOpenIcon from "@material-ui/icons/LockOpen";
+import { usePrivacy } from "./PrivacyContext";
 import "./Message.css";
 
 const formatTimestamp = (timestamp) => {
@@ -44,6 +45,7 @@ const Message = ({
   onExpire,
   onStartTimer,
 }) => {
+  const { isPrivacyMode } = usePrivacy();
   const [secondsLeft, setSecondsLeft] = useState(() => {
     if (!expireAt) return null;
     const diff = Math.ceil((new Date(expireAt).getTime() - Date.now()) / 1000);
@@ -249,13 +251,25 @@ const Message = ({
 
           {isGif ? (
             <img
-              className="message__gif pointer-events-none"
+              className={`message__gif pointer-events-none ${
+                isPrivacyMode
+                  ? "blur-md hover:blur-none transition-all duration-300 ease-in-out"
+                  : ""
+              }`}
               src={message}
               alt="Shared GIF"
               loading="lazy"
             />
           ) : !isDefaultAttachmentText && message ? (
-            <p className="message__text">{message}</p>
+            <p
+              className={`message__text ${
+                isPrivacyMode
+                  ? "blur-md hover:blur-none transition-all duration-300 ease-in-out"
+                  : ""
+              }`}
+            >
+              {message}
+            </p>
           ) : null}
 
           {/* Quick interactive trigger if message has an un-started deal */}

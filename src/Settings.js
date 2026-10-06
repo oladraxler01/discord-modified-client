@@ -4,11 +4,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { selectUser, updateDisplayName } from "./features/userSlice";
 import { auth } from "./firebase";
+import { usePrivacy } from "./PrivacyContext";
 import "./Settings.css";
 
 const Settings = () => {
   const user = useSelector(selectUser);
   const dispatch = useDispatch();
+  const { isPrivacyMode, togglePrivacyMode } = usePrivacy();
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
@@ -74,6 +76,31 @@ const Settings = () => {
             </p>
           )}
         </form>
+
+        {/* Privacy Section */}
+        <section className="settings-card__privacySection">
+          <div className="settings-card__privacyHeader">
+            <h2>Privacy</h2>
+          </div>
+          <div className="settings-card__privacyControl">
+            <div className="settings-card__toggleRow">
+              <span className="settings-card__toggleTitle">Anti-Shoulder Surfing Mode</span>
+              <label className="settings-card__switch">
+                <input
+                  type="checkbox"
+                  checked={isPrivacyMode}
+                  onChange={togglePrivacyMode}
+                  aria-label="Toggle Anti-Shoulder Surfing Mode"
+                />
+                <span className="settings-card__slider" />
+              </label>
+            </div>
+            <p className="settings-card__privacyNote">
+              Anti-Shoulder Surfing Mode: Blurs all chat messages to protect your screen from onlookers. Simply hover your mouse over an individual message to temporarily reveal it.
+            </p>
+          </div>
+        </section>
+
         <dl className="settings-card__details">
           <div>
             <dt>Email</dt>

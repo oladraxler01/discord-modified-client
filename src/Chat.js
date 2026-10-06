@@ -60,6 +60,7 @@ const popularGifs = [
 
 const VoiceRoomSession = ({ token, serverUrl, onDisconnected, onError }) => {
   const [room, setRoom] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
   const [participants, setParticipants] = useState([]);
   const [isMicrophoneEnabled, setIsMicrophoneEnabled] = useState(false);
   const [connectionError, setConnectionError] = useState("");
@@ -76,51 +77,86 @@ const VoiceRoomSession = ({ token, serverUrl, onDisconnected, onError }) => {
     roomRef.current = liveRoom;
 
     const refreshParticipants = () => {
-      if (!active) return;
-      const remoteParticipants = Array.from(
-        liveRoom.remoteParticipants.values(),
-      ).map((participant) => ({
-        identity: participant.identity,
-        name: participant.name || participant.identity,
-        isSpeaking: participant.isSpeaking,
-      }));
-      setParticipants([
-        {
-          identity: liveRoom.localParticipant.identity,
+      if (!active || !liveRoom) return;
+
+      // Safe guarded retrieval of remote participants preventing "reading values of undefined"
+      let remoteList = [];
+      const remote = liveRoom.remoteParticipants;
+      if (remote) {
+        if (typeof remote.values === "function") {
+          remoteList = Array.from(remote.values());
+        } else if (typeof remote.forEach === "function") {
+          remote.forEach((p) => remoteList.push(p));
+        } else if (Array.isArray(remote)) {
+          remoteList = remote;
+        }
+      }
+
+      const remoteParticipants = (Array.isArray(remoteList) ? remoteList : [])
+        .filter(Boolean)
+        .map((participant) => ({
+          identity: participant?.identity || "guest",
+          name: participant?.name || participant?.identity || "Guest",
+          isSpeaking: Boolean(participant?.isSpeaking),
+        }));
+
+      const localList = [];
+      if (liveRoom.localParticipant) {
+        localList.push({
+          identity: liveRoom.localParticipant.identity || "local",
           name: liveRoom.localParticipant.name || "You",
           isLocal: true,
-          isSpeaking: liveRoom.localParticipant.isSpeaking,
-        },
-        ...remoteParticipants,
-      ]);
+          isSpeaking: Boolean(liveRoom.localParticipant.isSpeaking),
+        });
+      }
+
+      setParticipants([...localList, ...remoteParticipants]);
     };
 
     const attachRemoteAudio = (track) => {
-      if (!active || track.kind !== Track.Kind.Audio || !audioMountRef.current)
+      if (!active || !track || track.kind !== Track.Kind.Audio || !audioMountRef.current)
         return;
-      const elements = track.attach();
-      elements.forEach((element) => {
-        element.autoplay = true;
-        element.setAttribute("playsinline", "true");
-        audioMountRef.current.appendChild(element);
-      });
-      attachedAudioTracks.add(track);
+      try {
+        const elements = track.attach();
+        elements.forEach((element) => {
+          element.autoplay = true;
+          element.setAttribute("playsinline", "true");
+          audioMountRef.current.appendChild(element);
+        });
+        attachedAudioTracks.add(track);
+      } catch (err) {
+        console.warn("Audio attach error:", err);
+      }
     };
+
     const detachRemoteAudio = (track) => {
-      if (track.kind !== Track.Kind.Audio) return;
-      track.detach().forEach((element) => element.remove());
+      if (!track || track.kind !== Track.Kind.Audio) return;
+      try {
+        track.detach().forEach((element) => element.remove());
+      } catch (err) {}
     };
+
+    const handleConnected = () => {
+      if (!active) return;
+      setIsConnected(true);
+      refreshParticipants();
+    };
+
     const handleDisconnected = () => {
-      if (active && callbacksRef.current.onDisconnected) {
+      if (!active) return;
+      setIsConnected(false);
+      if (callbacksRef.current.onDisconnected) {
         callbacksRef.current.onDisconnected();
       }
     };
+
     const handleError = (error) => {
       if (!active) return;
-      setConnectionError(error.message || "LiveKit connection failed.");
+      setConnectionError(error?.message || "LiveKit connection failed.");
       if (callbacksRef.current.onError) callbacksRef.current.onError(error);
     };
 
+    liveRoom.on(RoomEvent.Connected, handleConnected);
     liveRoom.on(RoomEvent.ParticipantConnected, refreshParticipants);
     liveRoom.on(RoomEvent.ParticipantDisconnected, refreshParticipants);
     liveRoom.on(RoomEvent.TrackSubscribed, attachRemoteAudio);
@@ -134,23 +170,31 @@ const VoiceRoomSession = ({ token, serverUrl, onDisconnected, onError }) => {
       .then(async () => {
         if (!active) return;
         setRoom(liveRoom);
+        setIsConnected(true);
         refreshParticipants();
 
-        // Attach existing remote audio tracks
+        // Attach existing remote audio tracks safely
         try {
-          liveRoom.remoteParticipants.forEach((p) => {
-            p.audioTracks.forEach((pub) => {
-              if (pub.track) attachRemoteAudio(pub.track);
+          const remote = liveRoom.remoteParticipants;
+          if (remote && typeof remote.forEach === "function") {
+            remote.forEach((p) => {
+              if (p?.audioTracks && typeof p.audioTracks.forEach === "function") {
+                p.audioTracks.forEach((pub) => {
+                  if (pub?.track) attachRemoteAudio(pub.track);
+                });
+              }
             });
-          });
+          }
         } catch (trackError) {
           console.warn("Could not attach initial tracks:", trackError);
         }
 
         // Gracefully attempt mic enable
         try {
-          await liveRoom.localParticipant.setMicrophoneEnabled(true);
-          if (active) setIsMicrophoneEnabled(true);
+          if (liveRoom.localParticipant) {
+            await liveRoom.localParticipant.setMicrophoneEnabled(true);
+            if (active) setIsMicrophoneEnabled(true);
+          }
         } catch (micErr) {
           console.warn("Could not enable microphone automatically:", micErr);
           if (active) setIsMicrophoneEnabled(false);
@@ -169,14 +213,14 @@ const VoiceRoomSession = ({ token, serverUrl, onDisconnected, onError }) => {
   }, [serverUrl, token]);
 
   const toggleMicrophone = async () => {
-    if (!roomRef.current) return;
+    if (!roomRef.current || !roomRef.current.localParticipant) return;
     try {
       await roomRef.current.localParticipant.setMicrophoneEnabled(
         !isMicrophoneEnabled,
       );
       setIsMicrophoneEnabled((enabled) => !enabled);
     } catch (error) {
-      setConnectionError(error.message || "Could not change microphone state.");
+      setConnectionError(error?.message || "Could not change microphone state.");
     }
   };
 
@@ -190,12 +234,14 @@ const VoiceRoomSession = ({ token, serverUrl, onDisconnected, onError }) => {
     );
   }
 
-  if (!room)
+  // Ensure we don't render the inner UI until the room's connection state is fully established
+  if (!room || !isConnected || (room.state && room.state !== "connected")) {
     return (
       <div className="veil-call__status" role="status">
         Connecting to your voice room…
       </div>
     );
+  }
 
   return (
     <>

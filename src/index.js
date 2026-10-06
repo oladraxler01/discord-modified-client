@@ -7,13 +7,16 @@ import { Provider } from "react-redux";
 import { BrowserRouter } from "react-router-dom";
 import * as serviceWorker from "./serviceWorker";
 import { ThemeProvider } from "./ThemeContext";
+import { PrivacyProvider } from "./PrivacyContext";
 
 ReactDOM.render(
   <React.StrictMode>
     <Provider store={store}>
       <BrowserRouter>
         <ThemeProvider>
-          <App />
+          <PrivacyProvider>
+            <App />
+          </PrivacyProvider>
         </ThemeProvider>
       </BrowserRouter>
     </Provider>

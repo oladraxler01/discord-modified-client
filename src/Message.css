@@ -383,3 +383,28 @@
   cursor: wait;
 }
 
+/* Anti-Shoulder Surfing Mode (Tailwind Utility Classes) */
+.blur-md {
+  filter: blur(8px);
+  user-select: none;
+}
+
+.hover\:blur-none:hover,
+.blur-md:hover {
+  filter: blur(0px) !important;
+  user-select: auto;
+}
+
+.transition-all {
+  transition-property: all;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+.ease-in-out {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
