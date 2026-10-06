@@ -741,7 +741,17 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
         setAudioLevels(Array(18).fill(12));
         getConversation();
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        console.error("Message send failed:", err);
+        const serverError =
+          err.response?.data?.error ||
+          (err.response?.status === 413
+            ? "File is too large to send."
+            : err.response?.status === 404
+              ? "Conversation not found or access expired."
+              : "Could not send message. Please try again.");
+        setAttachmentError(serverError);
+      });
   };
 
   const startRecording = async () => {
@@ -873,23 +883,84 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
     if (!file) return;
     event.target.value = "";
 
-    const maxFileSize = 8 * 1024 * 1024;
+    const maxFileSize = 12 * 1024 * 1024;
     if (file.size > maxFileSize) {
       setAttachmentError(
-        "Files should be 8MB or smaller for a smooth Veil message.",
+        "Files should be 12MB or smaller for a smooth Veil message.",
       );
       return;
     }
 
+    const isCompressibleImage =
+      file.type.startsWith("image/") &&
+      !file.type.includes("gif") &&
+      !file.type.includes("svg");
+
     const reader = new FileReader();
     reader.onload = () => {
-      setAttachment({
-        name: file.name,
-        type: file.type || "application/octet-stream",
-        size: file.size,
-        dataUrl: reader.result,
-      });
-      setAttachmentError("");
+      const rawDataUrl = reader.result;
+
+      if (isCompressibleImage) {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const maxDimension = 1600;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+              } else {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+              }
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const optimizedDataUrl = canvas.toDataURL("image/jpeg", 0.88);
+            setAttachment({
+              name: file.name,
+              type: "image/jpeg",
+              size: Math.round((optimizedDataUrl.length * 3) / 4),
+              dataUrl: optimizedDataUrl,
+            });
+            setAttachmentError("");
+          } catch (e) {
+            setAttachment({
+              name: file.name,
+              type: file.type || "application/octet-stream",
+              size: file.size,
+              dataUrl: rawDataUrl,
+            });
+            setAttachmentError("");
+          }
+        };
+        img.onerror = () => {
+          setAttachment({
+            name: file.name,
+            type: file.type || "application/octet-stream",
+            size: file.size,
+            dataUrl: rawDataUrl,
+          });
+          setAttachmentError("");
+        };
+        img.src = rawDataUrl;
+      } else {
+        setAttachment({
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          dataUrl: rawDataUrl,
+        });
+        setAttachmentError("");
+      }
     };
     reader.onerror = () => {
       setAttachmentError("This file could not be read from your device.");
