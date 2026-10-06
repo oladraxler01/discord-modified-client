@@ -585,9 +585,15 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
 
     conversationRequest
       .then((response) => {
+        const now = Date.now();
         if (isDirectMessage) {
-          setMessages(getResponseArray(response.data?.conversation));
-          // NEW: Grab DM timer settings
+          const rawMsgs = getResponseArray(response.data?.conversation);
+          setMessages(
+            rawMsgs.filter(
+              (m) => !m.expireAt || new Date(m.expireAt).getTime() > now,
+            ),
+          );
+          // Grab DM timer settings
           setEphemeralSettings(
             response.data?.ephemeralSettings || {
               active: false,
@@ -601,8 +607,13 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
 
         const conversations = getResponseArray(response.data, "conversations");
         const currentChannel = conversations[0] || {};
-        setMessages(getResponseArray(currentChannel.conversation));
-        // NEW: Grab Channel timer settings
+        const rawMsgs = getResponseArray(currentChannel.conversation);
+        setMessages(
+          rawMsgs.filter(
+            (m) => !m.expireAt || new Date(m.expireAt).getTime() > now,
+          ),
+        );
+        // Grab Channel timer settings
         setEphemeralSettings(
           currentChannel.ephemeralSettings || {
             active: false,
@@ -664,15 +675,27 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
   const handleAcceptTimer = async () => {
     if (!activeChannelId) return;
     try {
+      const duration = ephemeralSettings?.durationInSeconds || 10;
       // Optimistically activate local ephemeral settings so banner and countdown switch immediately
       setEphemeralSettings((prev) => ({
         ...prev,
         active: true,
         agreedByUids: [...new Set([...(prev?.agreedByUids || []), user?.uid])],
       }));
+      // Optimistically start live countdown immediately on all existing unexpired messages
+      setMessages((prev) =>
+        prev.map((m) =>
+          !m.expireAt
+            ? {
+                ...m,
+                expireAt: new Date(Date.now() + duration * 1000).toISOString(),
+              }
+            : m,
+        ),
+      );
       await axios.post(`/api/channels/${activeChannelId}/timer`, {
         uid: user.uid,
-        durationInSeconds: ephemeralSettings.durationInSeconds,
+        durationInSeconds: duration,
       });
       getConversation();
     } catch (err) {
