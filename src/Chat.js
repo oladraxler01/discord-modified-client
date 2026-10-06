@@ -725,7 +725,13 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
     }
 
     if (attachment) {
-      payload.attachment = attachment;
+      payload.attachment = {
+        name: attachment.name || "attachment",
+        type: attachment.type || "application/octet-stream",
+        size: Number(attachment.size || 0),
+        dataUrl: attachment.dataUrl || "",
+        url: attachment.url || "",
+      };
     }
 
     const messageRequest = isDirectMessage
