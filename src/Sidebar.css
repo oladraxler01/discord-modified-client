@@ -425,41 +425,35 @@
 
 @media (max-width: 768px) {
   .sidebar {
-    position: fixed;
-    z-index: 30;
-    top: 54px;
-    bottom: 0;
-    left: 0;
-    width: min(86vw, 320px);
-    height: auto;
-    max-height: calc(100dvh - 54px);
-    transform: translateX(-105%);
-    transition: transform 180ms ease;
-    box-shadow: 12px 0 28px rgba(0, 0, 0, 0.32);
-    background: rgba(9, 9, 17, 0.76);
-    backdrop-filter: blur(32px) saturate(140%);
-    -webkit-backdrop-filter: blur(32px) saturate(140%);
-  }
-
-  .sidebar.sidebar--open {
-    transform: translateX(0);
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform: none;
+    background: transparent;
+    box-shadow: none;
   }
 
   .sidebar__top {
-    padding: 16px;
+    padding: 14px 16px;
   }
 
   .sidebar__channels {
-    height: 0;
-    flex: 1 1 0;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .sidebar__groupItem {
     flex-wrap: wrap;
+    gap: 8px;
   }
 
   .sidebar__groupInfo {
     min-width: 0;
     overflow-wrap: anywhere;
+  }
+
+  .sidebar__groupButtons {
+    width: 100%;
+    justify-content: flex-end;
   }
 }

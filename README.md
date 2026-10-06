@@ -9,7 +9,7 @@ VEIL combines a React chat client and Node/Express API with Google sign-in, priv
 - Client: React 16, Create React App 3, React Router v5, Redux Toolkit, Material UI v4, Framer Motion, emoji-picker-react, CSS.
 - Authentication: Firebase Authentication client; Firebase Admin verifies backend ID tokens.
 - API/data: Node.js, Express 5, Axios, MongoDB Atlas, Mongoose 9.
-- Realtime/voice: Pusher client/server SDK, LiveKit token SDK, browser MediaRecorder.
+- Realtime/voice: Pusher client/server SDK, `livekit-client` browser SDK and LiveKit token SDK, browser MediaRecorder. The call UI uses the LiveKit Room API because the published React UI components require React 18 while VEIL currently runs React 16.
 - Hosting: Vercel/static frontend and Render API.
 
 ## Local setup
@@ -24,7 +24,7 @@ From this directory:
 npm install
 ```
 
-Copy `.env.example` to `.env.local`. Set `REACT_APP_API_URL` to the backend origin if using a different API. Configure the Firebase web app in `src/firebase.js`, enable Google sign-in, and add `localhost` and deployed domains under Firebase Authentication → Settings → Authorized domains. Run `npm start` or `npm run build`.
+Copy `.env.example` to `.env.local`. Set `REACT_APP_API_URL` to the backend origin if using a different API and `REACT_APP_LIVEKIT_URL` to the LiveKit server URL (for example, `wss://your-project.livekit.cloud`). Configure the Firebase web app in `src/firebase.js`, enable Google sign-in, and add `localhost` and deployed domains under Firebase Authentication → Settings → Authorized domains. Run `npm start` or `npm run build`.
 
 ### Backend
 
@@ -46,6 +46,8 @@ Copy `discord-backend/.env.example` to `discord-backend/.env`. For Render, set t
 | `CHANNEL_MIGRATION_OWNER_UID`                                    | Temporary UID allowed to migrate old channels; remove after migration. |
 
 The backend loads local `.env` values with dotenv. Hosting providers should use environment settings.
+
+Set `REACT_APP_LIVEKIT_URL` in the frontend deployment environment as well. Only the LiveKit server URL belongs in the browser configuration; the LiveKit API secret must remain backend-only.
 
 ## Browser routes
 

@@ -6,8 +6,13 @@ import CradGiftcardIcon from "@material-ui/icons/CardGiftcard";
 import GifIcon from "@material-ui/icons/Gif";
 import EmojiEmoticonsIcon from "@material-ui/icons/EmojiEmotions";
 import MicIcon from "@material-ui/icons/Mic";
+import MicOffIcon from "@material-ui/icons/MicOff";
 import StopIcon from "@material-ui/icons/Stop";
 import SendIcon from "@material-ui/icons/Send";
+import CallEndIcon from "@material-ui/icons/CallEnd";
+import CloseIcon from "@material-ui/icons/Close";
+import AttachFileIcon from "@material-ui/icons/AttachFile";
+import WhatshotIcon from "@material-ui/icons/Whatshot";
 import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
 import Message from "./Message";
 import { useDispatch, useSelector } from "react-redux";
@@ -24,6 +29,7 @@ import usePusherRoom from "./hooks/usePusherRoom";
 import getResponseArray from "./utils/responseArrays";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "./ThemeContext";
+import { Room, RoomEvent, Track } from "livekit-client";
 
 const popularGifs = [
   {
@@ -52,6 +58,210 @@ const popularGifs = [
   },
 ];
 
+const VoiceRoomSession = ({ token, serverUrl, onDisconnected, onError }) => {
+  const [room, setRoom] = useState(null);
+  const [participants, setParticipants] = useState([]);
+  const [isMicrophoneEnabled, setIsMicrophoneEnabled] = useState(false);
+  const [connectionError, setConnectionError] = useState("");
+  const audioMountRef = useRef(null);
+  const roomRef = useRef(null);
+  const attachedAudioTracksRef = useRef(new Set());
+  const callbacksRef = useRef({ onDisconnected, onError });
+  callbacksRef.current = { onDisconnected, onError };
+
+  useEffect(() => {
+    let active = true;
+    const liveRoom = new Room();
+    const attachedAudioTracks = attachedAudioTracksRef.current;
+    roomRef.current = liveRoom;
+
+    const refreshParticipants = () => {
+      if (!active) return;
+      const remoteParticipants = Array.from(
+        liveRoom.remoteParticipants.values(),
+      ).map((participant) => ({
+        identity: participant.identity,
+        name: participant.name || participant.identity,
+        isSpeaking: participant.isSpeaking,
+      }));
+      setParticipants([
+        {
+          identity: liveRoom.localParticipant.identity,
+          name: liveRoom.localParticipant.name || "You",
+          isLocal: true,
+          isSpeaking: liveRoom.localParticipant.isSpeaking,
+        },
+        ...remoteParticipants,
+      ]);
+    };
+
+    const attachRemoteAudio = (track) => {
+      if (!active || track.kind !== Track.Kind.Audio || !audioMountRef.current)
+        return;
+      const elements = track.attach();
+      elements.forEach((element) => {
+        element.autoplay = true;
+        element.setAttribute("playsinline", "true");
+        audioMountRef.current.appendChild(element);
+      });
+      attachedAudioTracks.add(track);
+    };
+    const detachRemoteAudio = (track) => {
+      if (track.kind !== Track.Kind.Audio) return;
+      track.detach().forEach((element) => element.remove());
+    };
+    const handleDisconnected = () => {
+      if (active && callbacksRef.current.onDisconnected) {
+        callbacksRef.current.onDisconnected();
+      }
+    };
+    const handleError = (error) => {
+      if (!active) return;
+      setConnectionError(error.message || "LiveKit connection failed.");
+      if (callbacksRef.current.onError) callbacksRef.current.onError(error);
+    };
+
+    liveRoom.on(RoomEvent.ParticipantConnected, refreshParticipants);
+    liveRoom.on(RoomEvent.ParticipantDisconnected, refreshParticipants);
+    liveRoom.on(RoomEvent.TrackSubscribed, attachRemoteAudio);
+    liveRoom.on(RoomEvent.TrackUnsubscribed, detachRemoteAudio);
+    liveRoom.on(RoomEvent.ActiveSpeakersChanged, refreshParticipants);
+    liveRoom.on(RoomEvent.Disconnected, handleDisconnected);
+    liveRoom.on(RoomEvent.MediaDevicesError, handleError);
+
+    liveRoom
+      .connect(serverUrl, token)
+      .then(async () => {
+        if (!active) return;
+        setRoom(liveRoom);
+        refreshParticipants();
+
+        // Attach existing remote audio tracks
+        try {
+          liveRoom.remoteParticipants.forEach((p) => {
+            p.audioTracks.forEach((pub) => {
+              if (pub.track) attachRemoteAudio(pub.track);
+            });
+          });
+        } catch (trackError) {
+          console.warn("Could not attach initial tracks:", trackError);
+        }
+
+        // Gracefully attempt mic enable
+        try {
+          await liveRoom.localParticipant.setMicrophoneEnabled(true);
+          if (active) setIsMicrophoneEnabled(true);
+        } catch (micErr) {
+          console.warn("Could not enable microphone automatically:", micErr);
+          if (active) setIsMicrophoneEnabled(false);
+        }
+      })
+      .catch(handleError);
+
+    return () => {
+      active = false;
+      liveRoom.removeAllListeners();
+      attachedAudioTracks.forEach(detachRemoteAudio);
+      attachedAudioTracks.clear();
+      liveRoom.disconnect();
+      roomRef.current = null;
+    };
+  }, [serverUrl, token]);
+
+  const toggleMicrophone = async () => {
+    if (!roomRef.current) return;
+    try {
+      await roomRef.current.localParticipant.setMicrophoneEnabled(
+        !isMicrophoneEnabled,
+      );
+      setIsMicrophoneEnabled((enabled) => !enabled);
+    } catch (error) {
+      setConnectionError(error.message || "Could not change microphone state.");
+    }
+  };
+
+  const disconnect = () => roomRef.current?.disconnect();
+
+  if (connectionError) {
+    return (
+      <div className="veil-call__status veil-call__status--error" role="alert">
+        {connectionError}
+      </div>
+    );
+  }
+
+  if (!room)
+    return (
+      <div className="veil-call__status" role="status">
+        Connecting to your voice room…
+      </div>
+    );
+
+  return (
+    <>
+      <div className="veil-call__participantGrid" aria-live="polite">
+        {participants.map((participant) => (
+          <div
+            className={`veil-call__participant ${participant.isSpeaking ? "is-speaking" : ""}`}
+            key={participant.identity}
+          >
+            <span className="veil-call__avatar">
+              {(participant.name || "?").slice(0, 1).toUpperCase()}
+            </span>
+            <strong>
+              {participant.name}
+              {participant.isLocal ? " (you)" : ""}
+            </strong>
+            <small>
+              {participant.isSpeaking
+                ? "Speaking"
+                : participant.isLocal && !isMicrophoneEnabled
+                  ? "Microphone muted"
+                  : "Connected"}
+            </small>
+          </div>
+        ))}
+      </div>
+      <div
+        className="veil-call__remoteAudio"
+        ref={audioMountRef}
+        aria-hidden="true"
+      />
+      <div className="veil-call__controls">
+        <button
+          className={`veil-call__mic ${isMicrophoneEnabled ? "is-on" : "is-muted"}`}
+          type="button"
+          onClick={toggleMicrophone}
+          aria-label={
+            isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"
+          }
+        >
+          {isMicrophoneEnabled ? (
+            <>
+              <MicIcon fontSize="small" />
+              <span>Mute</span>
+            </>
+          ) : (
+            <>
+              <MicOffIcon fontSize="small" />
+              <span>Unmute</span>
+            </>
+          )}
+        </button>
+        <button
+          className="veil-call__disconnect"
+          type="button"
+          onClick={disconnect}
+          aria-label="Leave voice call"
+        >
+          <CallEndIcon fontSize="small" />
+          <span>Leave call</span>
+        </button>
+      </div>
+    </>
+  );
+};
+
 const Chat = ({ onMessagesChange, onRegisterActions }) => {
   const dispatch = useDispatch();
   const { roomId } = useParams();
@@ -66,6 +276,10 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
+  const [isVoiceConnected, setIsVoiceConnected] = useState(false);
+  const [liveKitToken, setLiveKitToken] = useState("");
+  const [voiceCallError, setVoiceCallError] = useState("");
+  const [isFetchingVoiceToken, setIsFetchingVoiceToken] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const searchInputRef = useRef(null);
   const { currentTheme, setCurrentTheme } = useTheme();
@@ -99,7 +313,64 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
   useEffect(() => {
     setMessages([]);
     setSearchTerm("");
+    setIsVoiceConnected(false);
+    setLiveKitToken("");
+    setVoiceCallError("");
   }, [activeChannelId, isDirectMessage]);
+
+  useEffect(() => {
+    if (!isVoiceConnected) return undefined;
+
+    let isCurrentCall = true;
+    const liveKitUrl = process.env.REACT_APP_LIVEKIT_URL;
+    setLiveKitToken("");
+    setVoiceCallError("");
+    setIsFetchingVoiceToken(true);
+
+    if (!activeChannelId) {
+      setVoiceCallError("Open a conversation before starting a voice call.");
+      setIsFetchingVoiceToken(false);
+      return () => {
+        isCurrentCall = false;
+      };
+    }
+    if (!liveKitUrl) {
+      setVoiceCallError(
+        "LiveKit is not configured. Set REACT_APP_LIVEKIT_URL for the frontend.",
+      );
+      setIsFetchingVoiceToken(false);
+      return () => {
+        isCurrentCall = false;
+      };
+    }
+
+    axios
+      .post("/api/voice/token", {
+        roomName: activeChannelId,
+        participantName: user?.displayName || user?.email || "Veil user",
+      })
+      .then((response) => {
+        if (isCurrentCall) {
+          if (response.data?.token) setLiveKitToken(response.data.token);
+          else
+            setVoiceCallError("The voice service did not return a room token.");
+        }
+      })
+      .catch((error) => {
+        if (isCurrentCall) {
+          setVoiceCallError(
+            error.response?.data?.error || "Could not join this voice room.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isCurrentCall) setIsFetchingVoiceToken(false);
+      });
+
+    return () => {
+      isCurrentCall = false;
+    };
+  }, [isVoiceConnected, activeChannelId, user]);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -554,20 +825,8 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
     input.trim() !== "" || Boolean(voiceData) || Boolean(attachment);
 
   const startConversationCall = useCallback(() => {
-    const callWindow = window.open(
-      "https://meet.google.com/new",
-      "_blank",
-      "noopener,noreferrer",
-    );
-    if (!callWindow) {
-      window.alert(
-        "Your browser blocked the call window. Allow popups and try again.",
-      );
-      return;
-    }
-    window.alert(
-      "A Google Meet room opened. Copy its meeting link and send it in this conversation to invite others.",
-    );
+    setVoiceCallError("");
+    setIsVoiceConnected(true);
   }, []);
 
   const filteredMessages = messages.filter((item) => {
@@ -675,10 +934,8 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
                 fontWeight: "bold",
               }}
             >
-              <span role="img" aria-label="fire emoji">
-                🔥
-              </span>{" "}
-              Burn-on-Read active ({ephemeralSettings.durationInSeconds}s)
+              <WhatshotIcon fontSize="small" />{" "}
+              <span>Burn-on-Read active ({ephemeralSettings.durationInSeconds}s)</span>
             </div>
           )}
 
@@ -719,11 +976,9 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
 
           {attachment && (
             <div className="chat__attachmentPreview" aria-live="polite">
-              <span>
-                <span role="img" aria-label="paperclip emoji">
-                  📎
-                </span>{" "}
-                {attachment.name}
+              <span className="chat__attachmentPreviewContent">
+                <AttachFileIcon fontSize="small" />
+                <span>{attachment.name}</span>
               </span>
               <button type="button" onClick={() => setAttachment(null)}>
                 Remove
@@ -776,61 +1031,30 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
               }
             />
 
-            {/* NEW: Timer Controls built directly into the text bar */}
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                marginLeft: "12px",
-                marginRight: "12px",
-              }}
-            >
+            {/* Timer Controls */}
+            <div className="chat__timerControls">
               <input
                 type="number"
                 placeholder="Secs"
-                style={{
-                  backgroundColor: "#40444b",
-                  color: "white",
-                  padding: "8px",
-                  borderRadius: "4px",
-                  width: "60px",
-                  outline: "none",
-                  border: "none",
-                }}
+                className="chat__timerInput"
                 onChange={(e) => setCustomTimer(Number(e.target.value))}
               />
               <button
                 type="button"
+                className="chat__timerBtn chat__timerBtn--set"
                 onClick={(e) => {
                   e.preventDefault();
                   handleProposeTimer(customTimer);
-                }}
-                style={{
-                  color: "#9ca3af",
-                  backgroundColor: "#2f3136",
-                  padding: "8px 12px",
-                  borderRadius: "4px",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "0.8rem",
                 }}
               >
                 Set
               </button>
               <button
                 type="button"
+                className="chat__timerBtn chat__timerBtn--off"
                 onClick={(e) => {
                   e.preventDefault();
                   handleProposeTimer(0);
-                }}
-                style={{
-                  color: "#f87171",
-                  backgroundColor: "#2f3136",
-                  padding: "8px 12px",
-                  borderRadius: "4px",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "0.8rem",
                 }}
               >
                 Off
@@ -939,6 +1163,58 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
                   </button>
                 ))}
             </div>
+          </div>
+        )}
+
+        {isVoiceConnected && (
+          <div className="veil-call__backdrop" role="presentation">
+            <section
+              className="veil-call"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Voice call in ${activeRoomName || "conversation"}`}
+            >
+              <header className="veil-call__header">
+                <div>
+                  <span className="veil-call__eyebrow">VEIL VOICE ROOM</span>
+                  <h2>{activeRoomName || "Conversation"}</h2>
+                  <p>Connect and talk privately in this space.</p>
+                </div>
+                <button
+                  className="veil-call__close"
+                  type="button"
+                  onClick={() => setIsVoiceConnected(false)}
+                  aria-label="Close voice call"
+                >
+                  <CloseIcon fontSize="small" />
+                </button>
+              </header>
+
+              {voiceCallError ? (
+                <div
+                  className="veil-call__status veil-call__status--error"
+                  role="alert"
+                >
+                  {voiceCallError}
+                </div>
+              ) : isFetchingVoiceToken || !liveKitToken ? (
+                <div className="veil-call__status" role="status">
+                  Connecting to your voice room…
+                </div>
+              ) : (
+                <VoiceRoomSession
+                  key={`${activeChannelId}-${liveKitToken}`}
+                  serverUrl={process.env.REACT_APP_LIVEKIT_URL}
+                  token={liveKitToken}
+                  onDisconnected={() => setIsVoiceConnected(false)}
+                  onError={(error) =>
+                    setVoiceCallError(
+                      error.message || "LiveKit connection failed.",
+                    )
+                  }
+                />
+              )}
+            </section>
           </div>
         )}
       </motion.div>

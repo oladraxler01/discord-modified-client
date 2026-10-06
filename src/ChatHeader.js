@@ -41,7 +41,7 @@ const ChatHeader = ({
           type="button"
           onClick={onStartCall}
           aria-label={`Start a call for ${channelName || "this conversation"}`}
-          title="Start a Google Meet call"
+          title="Start voice call"
         >
           <CallIcon />
           <span>Call</span>

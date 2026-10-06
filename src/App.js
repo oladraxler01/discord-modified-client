@@ -15,6 +15,12 @@ import Settings from "./Settings";
 import GroupInvite from "./GroupInvite";
 import GroupRoom from "./GroupRoom";
 import { useTheme } from "./ThemeContext";
+import MenuIcon from "@material-ui/icons/Menu";
+import PermMediaIcon from "@material-ui/icons/PermMedia";
+import ChatIcon from "@material-ui/icons/Chat";
+import SearchIcon from "@material-ui/icons/Search";
+import CallIcon from "@material-ui/icons/Call";
+import SettingsIcon from "@material-ui/icons/Settings";
 
 function App() {
   const dispatch = useDispatch();
@@ -113,7 +119,7 @@ function App() {
     <div className="app" data-theme={currentTheme}>
       {user ? (
         <div className="app-shell">
-          <div className="app__mobileBar">
+          <header className="app__mobileBar" aria-label="Mobile navigation">
             <button
               className="app__menuButton"
               type="button"
@@ -123,10 +129,49 @@ function App() {
                 setIsMediaOpen(false);
                 setIsSidebarOpen((open) => !open);
               }}
+              title="Channels and Direct Messages"
             >
-              <span aria-hidden="true">☰</span>
+              <MenuIcon fontSize="small" className="app__buttonIcon" />
               <span>Channels</span>
             </button>
+
+            <div className="app__mobileActions">
+              <Link
+                className={`app__mobileActionBtn ${location.pathname === "/" || location.pathname.startsWith("/chat/") || location.pathname.startsWith("/dm/") ? "is-active" : ""}`}
+                to="/"
+                title="Messages"
+                aria-label="Messages"
+              >
+                <ChatIcon fontSize="small" />
+              </Link>
+              <button
+                className="app__mobileActionBtn"
+                type="button"
+                onClick={() => chatActions.current?.focusSearch()}
+                title="Search messages"
+                aria-label="Search messages"
+              >
+                <SearchIcon fontSize="small" />
+              </button>
+              <button
+                className="app__mobileActionBtn"
+                type="button"
+                onClick={() => chatActions.current?.startCall()}
+                title="Start call"
+                aria-label="Start call"
+              >
+                <CallIcon fontSize="small" />
+              </button>
+              <Link
+                className={`app__mobileActionBtn ${location.pathname === "/settings" ? "is-active" : ""}`}
+                to="/settings"
+                title="Settings"
+                aria-label="Settings"
+              >
+                <SettingsIcon fontSize="small" />
+              </Link>
+            </div>
+
             <button
               className={`app__menuButton app__menuButton--media ${isMediaOpen ? "is-active" : ""}`}
               type="button"
@@ -136,11 +181,12 @@ function App() {
                 setIsSidebarOpen(false);
                 setIsMediaOpen((open) => !open);
               }}
+              title="Shared files and media"
             >
-              <span aria-hidden="true">▣</span>
-              <span>Shared files</span>
+              <PermMediaIcon fontSize="small" className="app__buttonIcon" />
+              <span>Media</span>
             </button>
-          </div>
+          </header>
 
           <nav className="app-nav" aria-label="Primary navigation">
             <Link
@@ -149,7 +195,7 @@ function App() {
               aria-label="Messages"
               title="Messages"
             >
-              ◌
+              <ChatIcon />
             </Link>
             <button
               className="app-nav__button"
@@ -158,7 +204,7 @@ function App() {
               title="Search messages"
               onClick={() => chatActions.current?.focusSearch()}
             >
-              ⌕
+              <SearchIcon />
             </button>
             <button
               className="app-nav__button"
@@ -167,7 +213,7 @@ function App() {
               title="Start call"
               onClick={() => chatActions.current?.startCall()}
             >
-              ☎
+              <CallIcon />
             </button>
             <Link
               className={`app-nav__button ${location.pathname === "/settings" ? "is-active" : ""}`}
@@ -175,7 +221,7 @@ function App() {
               aria-label="Settings"
               title="Settings"
             >
-              ⚙
+              <SettingsIcon />
             </Link>
           </nav>
 

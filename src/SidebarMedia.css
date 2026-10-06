@@ -24,6 +24,9 @@
 .app-rail__header span {
   color: var(--muted-color, #64748b);
 }
+.app-rail__headerIcon {
+  color: var(--muted-color, #64748b);
+}
 .app-rail__grid {
   display: grid;
   gap: 10px;
