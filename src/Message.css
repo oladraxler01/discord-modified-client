@@ -266,3 +266,120 @@
 .app[data-theme="midnight"] .message__attachmentSize {
   color: #94a3b8;
 }
+
+/* Header row layout with countdown pill */
+.message__headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Burn Countdown Pill */
+.message__burnPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.08);
+  transition: all 200ms ease;
+  user-select: none;
+}
+
+.message__burnIcon {
+  font-size: 14px !important;
+  color: #f97316;
+  animation: messageFlameFlicker 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes messageFlameFlicker {
+  0% { transform: scale(0.92) rotate(-3deg); filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.4)); }
+  100% { transform: scale(1.08) rotate(3deg); filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.7)); }
+}
+
+.message__burnCountdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.message__burnTrack {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.2);
+  overflow: hidden;
+  margin-left: 2px;
+}
+
+.message__burnFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f97316, #ef4444);
+  transition: width 400ms linear;
+}
+
+/* Urgent state: <= 3s */
+.message__burnPill--urgent {
+  background: rgba(220, 38, 38, 0.16);
+  border-color: #ef4444;
+  color: #dc2626;
+  animation: messagePulseUrgent 0.6s ease-in-out infinite alternate;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+}
+
+@keyframes messagePulseUrgent {
+  0% { transform: scale(0.97); }
+  100% { transform: scale(1.03); }
+}
+
+/* Message Dissolving / Vanishing Animation */
+.message--dissolving {
+  opacity: 0;
+  filter: blur(10px) brightness(1.6);
+  transform: scale(0.94) translateY(-8px);
+  pointer-events: none;
+  transition: opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
+              filter 500ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Accept Deal Prompt inside message */
+.message__acceptPrompt {
+  margin-top: 8px;
+}
+
+.message__acceptBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(74, 53, 86, 0.95), rgba(36, 27, 44, 0.95));
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(36, 27, 44, 0.2);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.message__acceptBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(36, 27, 44, 0.3);
+  background: linear-gradient(135deg, #5b3e6d, #2c1e38);
+}
+
+.message__acceptBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+

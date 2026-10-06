@@ -601,7 +601,7 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
     };
   }, []);
 
-  // NEW: API Handlers for the Timer Handshake
+  // API Handlers for the Timer Handshake & Per-message Countdown
   const handleProposeTimer = async (seconds) => {
     if (!activeChannelId) return;
     try {
@@ -618,6 +618,12 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
   const handleAcceptTimer = async () => {
     if (!activeChannelId) return;
     try {
+      // Optimistically activate local ephemeral settings so banner and countdown switch immediately
+      setEphemeralSettings((prev) => ({
+        ...prev,
+        active: true,
+        agreedByUids: [...new Set([...(prev?.agreedByUids || []), user?.uid])],
+      }));
       await axios.post(`/api/channels/${activeChannelId}/timer`, {
         uid: user.uid,
         durationInSeconds: ephemeralSettings.durationInSeconds,
@@ -625,6 +631,30 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
       getConversation();
     } catch (err) {
       console.error("Failed to accept timer:", err);
+    }
+  };
+
+  const handleStartMessageTimer = async (messageId, duration = 10) => {
+    if (!activeChannelId || !messageId) return;
+    try {
+      // Optimistically assign expireAt to message locally so countdown starts at 0ms delay
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId
+            ? {
+                ...m,
+                expireAt: new Date(Date.now() + duration * 1000).toISOString(),
+              }
+            : m,
+        ),
+      );
+      await axios.post(
+        `/api/channels/${activeChannelId}/messages/${messageId}/timer`,
+        { durationInSeconds: duration },
+      );
+      getConversation();
+    } catch (err) {
+      console.error("Failed to start message timer:", err);
     }
   };
 
@@ -881,61 +911,66 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
             </div>
           )}
 
-          {/* NEW: The Handshake Banner for Pending and Active Timers */}
+          {/* Ephemeral Timer Handshake / Deal Banner */}
           {ephemeralSettings?.durationInSeconds > 0 &&
             !ephemeralSettings?.active && (
-              <div
-                style={{
-                  backgroundColor: "rgba(180, 83, 9, 0.2)",
-                  border: "1px solid #d97706",
-                  color: "#fcd34d",
-                  padding: "12px",
-                  margin: "16px",
-                  borderRadius: "6px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span style={{ fontSize: "0.875rem" }}>
-                  A {ephemeralSettings.durationInSeconds}s burn timer was
-                  proposed. Waiting for members to accept.
-                </span>
-                {!ephemeralSettings.agreedByUids?.includes(user.uid) && (
+              <div className="chat__ephemeralBanner chat__ephemeralBanner--pending">
+                <div className="chat__ephemeralContent">
+                  <div className="chat__ephemeralIcon">
+                    <span role="img" aria-label="hourglass">⏳</span>
+                  </div>
+                  <div className="chat__ephemeralText">
+                    <span className="chat__ephemeralTitle">
+                      Ephemeral Deal Proposed ({ephemeralSettings.durationInSeconds}s)
+                    </span>
+                    <span className="chat__ephemeralSub">
+                      {ephemeralSettings.agreedByUids?.includes(user?.uid)
+                        ? "Awaiting agreement from the other member..."
+                        : "Accept this deal to activate live countdown and auto-dissolving messages."}
+                    </span>
+                  </div>
+                </div>
+                <div className="chat__ephemeralActions">
+                  {!ephemeralSettings.agreedByUids?.includes(user?.uid) && (
+                    <button
+                      type="button"
+                      className="chat__ephemeralBtn chat__ephemeralBtn--accept"
+                      onClick={handleAcceptTimer}
+                    >
+                      <span role="img" aria-label="lightning">⚡</span> Accept Deal
+                    </button>
+                  )}
                   <button
-                    onClick={handleAcceptTimer}
-                    style={{
-                      backgroundColor: "#f59e0b",
-                      color: "#000",
-                      padding: "4px 12px",
-                      borderRadius: "4px",
-                      fontWeight: "bold",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
+                    type="button"
+                    className="chat__ephemeralBtn chat__ephemeralBtn--cancel"
+                    onClick={() => handleProposeTimer(0)}
                   >
-                    Accept
+                    Decline
                   </button>
-                )}
+                </div>
               </div>
             )}
 
           {ephemeralSettings?.active && (
-            <div
-              style={{
-                backgroundColor: "rgba(220, 38, 38, 0.2)",
-                border: "1px solid #ef4444",
-                color: "#f87171",
-                padding: "8px",
-                margin: "16px",
-                borderRadius: "6px",
-                textAlign: "center",
-                fontSize: "0.875rem",
-                fontWeight: "bold",
-              }}
-            >
-              <WhatshotIcon fontSize="small" />{" "}
-              <span>Burn-on-Read active ({ephemeralSettings.durationInSeconds}s)</span>
+            <div className="chat__ephemeralBanner chat__ephemeralBanner--active">
+              <div className="chat__ephemeralContent">
+                <WhatshotIcon className="chat__ephemeralFlame" fontSize="small" />
+                <div className="chat__ephemeralText">
+                  <span className="chat__ephemeralTitle">
+                    Burn-on-Read Deal Active ({ephemeralSettings.durationInSeconds}s)
+                  </span>
+                  <span className="chat__ephemeralSub">
+                    Messages begin live countdown and auto-dissolve upon delivery
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="chat__ephemeralBtn chat__ephemeralBtn--stop"
+                onClick={() => handleProposeTimer(0)}
+              >
+                Disable
+              </button>
             </div>
           )}
 
@@ -953,6 +988,14 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
               user={message.user}
               voiceData={message.voiceData}
               attachment={message.attachment}
+              expireAt={message.expireAt}
+              ephemeralDuration={ephemeralSettings?.durationInSeconds}
+              isBurnActive={ephemeralSettings?.active}
+              currentUserId={user?.uid}
+              onExpire={(expiredId) => {
+                setMessages((prev) => prev.filter((m) => m._id !== expiredId));
+              }}
+              onStartTimer={(msgId, secs) => handleStartMessageTimer(msgId, secs)}
             />
           ))}
         </div>
@@ -1033,9 +1076,36 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
 
             {/* Timer Controls */}
             <div className="chat__timerControls">
+              <div className="chat__timerPresets">
+                <button
+                  type="button"
+                  className={`chat__timerPreset ${customTimer === 10 ? "chat__timerPreset--active" : ""}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setCustomTimer(10);
+                    handleProposeTimer(10);
+                  }}
+                  title="Quick 10-second burn deal"
+                >
+                  10s
+                </button>
+                <button
+                  type="button"
+                  className={`chat__timerPreset ${customTimer === 30 ? "chat__timerPreset--active" : ""}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setCustomTimer(30);
+                    handleProposeTimer(30);
+                  }}
+                  title="Quick 30-second burn deal"
+                >
+                  30s
+                </button>
+              </div>
               <input
                 type="number"
                 placeholder="Secs"
+                value={customTimer || ""}
                 className="chat__timerInput"
                 onChange={(e) => setCustomTimer(Number(e.target.value))}
               />
@@ -1044,21 +1114,24 @@ const Chat = ({ onMessagesChange, onRegisterActions }) => {
                 className="chat__timerBtn chat__timerBtn--set"
                 onClick={(e) => {
                   e.preventDefault();
-                  handleProposeTimer(customTimer);
+                  if (customTimer > 0) handleProposeTimer(customTimer);
                 }}
               >
                 Set
               </button>
-              <button
-                type="button"
-                className="chat__timerBtn chat__timerBtn--off"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleProposeTimer(0);
-                }}
-              >
-                Off
-              </button>
+              {ephemeralSettings?.active && (
+                <button
+                  type="button"
+                  className="chat__timerBtn chat__timerBtn--off"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleProposeTimer(0);
+                    setCustomTimer(0);
+                  }}
+                >
+                  Off
+                </button>
+              )}
             </div>
 
             <button

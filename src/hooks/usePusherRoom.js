@@ -31,9 +31,11 @@ const usePusherRoom = (
     const roomChannel = pusher.subscribe(roomChannelName);
 
     roomChannel.bind("newMessage", onMessage);
+    roomChannel.bind("timerUpdate", onMessage);
 
     return () => {
       roomChannel.unbind("newMessage", onMessage);
+      roomChannel.unbind("timerUpdate", onMessage);
       pusher.unsubscribe(roomChannelName);
     };
   }, [roomId, onMessage, isDirectMessage, isInviteOnly]);
